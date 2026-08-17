@@ -2,8 +2,9 @@ package it.vigilfuoco.tlcfield.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.net.Uri
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Column
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -21,12 +23,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import it.vigilfuoco.tlcfield.data.Site
 import it.vigilfuoco.tlcfield.data.SiteRepository
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SetJavaScriptEnabled")
@@ -39,6 +46,7 @@ fun SitesMapScreen(
     val mappableSites = SiteRepository.sites.filter {
         it.latitude != null && it.longitude != null && it.navigationVerified
     }
+    var mapError by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -71,6 +79,22 @@ fun SitesMapScreen(
                 }
             }
 
+            mapError?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Text(
+                        "Errore caricamento mappa: $error",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+
             AndroidView(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 factory = { ctx ->
@@ -78,6 +102,9 @@ fun SitesMapScreen(
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.loadsImagesAutomatically = true
+                        settings.allowFileAccess = true
+                        settings.allowContentAccess = true
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         webViewClient = object : WebViewClient() {
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                 val uri = request?.url ?: return false
@@ -92,14 +119,26 @@ fun SitesMapScreen(
                                 }
                                 return false
                             }
+
+                            override fun onReceivedError(
+                                view: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?
+                            ) {
+                                super.onReceivedError(view, request, error)
+                                if (request?.isForMainFrame == true) {
+                                    mapError = error?.description?.toString() ?: "errore sconosciuto"
+                                }
+                            }
                         }
-                        loadDataWithBaseURL(
-                            "file:///android_asset/leaflet/",
-                            buildMapHtml(mappableSites),
-                            "text/html",
-                            "UTF-8",
-                            null
-                        )
+
+                        val htmlFile = File(ctx.cacheDir, "sites_map.html")
+                        runCatching {
+                            htmlFile.writeText(buildMapHtml(mappableSites))
+                            loadUrl("file://${htmlFile.absolutePath}")
+                        }.onFailure { e ->
+                            mapError = e.message ?: "impossibile preparare la mappa"
+                        }
                     }
                 }
             )
@@ -128,8 +167,8 @@ private fun buildMapHtml(sites: List<Site>): String {
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="leaflet.css" />
-          <script src="leaflet.js"></script>
+          <link rel="stylesheet" href="file:///android_asset/leaflet/leaflet.css" />
+          <script src="file:///android_asset/leaflet/leaflet.js"></script>
           <style>
             html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
             body { font-family: sans-serif; }
@@ -139,7 +178,7 @@ private fun buildMapHtml(sites: List<Site>): String {
         <body>
           <div id="map"></div>
           <script>
-            L.Icon.Default.prototype.options.imagePath = 'images/';
+            L.Icon.Default.prototype.options.imagePath = 'file:///android_asset/leaflet/images/';
             const map = L.map('map', { zoomControl: true });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 19,
