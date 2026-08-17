@@ -2,6 +2,8 @@ package it.vigilfuoco.tlcfield.ui.screens
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -87,7 +89,7 @@ fun SitesMapScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                 ) {
                     Text(
-                        "Errore caricamento mappa: $error",
+                        "Errore mappa: $error",
                         modifier = Modifier.padding(12.dp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer
@@ -105,6 +107,7 @@ fun SitesMapScreen(
                         settings.allowFileAccess = true
                         settings.allowContentAccess = true
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+
                         webViewClient = object : WebViewClient() {
                             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                                 val uri = request?.url ?: return false
@@ -126,18 +129,44 @@ fun SitesMapScreen(
                                 error: WebResourceError?
                             ) {
                                 super.onReceivedError(view, request, error)
-                                if (request?.isForMainFrame == true) {
-                                    mapError = error?.description?.toString() ?: "errore sconosciuto"
-                                }
+                                val failedUrl = request?.url?.lastPathSegment ?: "risorsa sconosciuta"
+                                val desc = error?.description?.toString() ?: "errore sconosciuto"
+                                mapError = "$failedUrl -> $desc"
                             }
                         }
 
-                        val htmlFile = File(ctx.cacheDir, "sites_map.html")
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onConsoleMessage(message: ConsoleMessage?): Boolean {
+                                if (message?.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                                    mapError = "JS: ${message.message()} (riga ${message.lineNumber()})"
+                                }
+                                return true
+                            }
+                        }
+
                         runCatching {
+                            // Copia i file della mappa (html + libreria leaflet + icone) in un'unica
+                            // cartella reale, cosi' i percorsi relativi funzionano senza ambiguita'.
+                            val mapDir = File(ctx.cacheDir, "map").apply { mkdirs() }
+                            val imagesDir = File(mapDir, "images").apply { mkdirs() }
+
+                            fun copyAsset(assetPath: String, dest: File) {
+                                ctx.assets.open(assetPath).use { input ->
+                                    dest.outputStream().use { output -> input.copyTo(output) }
+                                }
+                            }
+
+                            copyAsset("leaflet/leaflet.css", File(mapDir, "leaflet.css"))
+                            copyAsset("leaflet/leaflet.js", File(mapDir, "leaflet.js"))
+                            for (img in listOf("marker-icon.png", "marker-icon-2x.png", "marker-shadow.png", "layers.png", "layers-2x.png")) {
+                                copyAsset("leaflet/images/$img", File(imagesDir, img))
+                            }
+
+                            val htmlFile = File(mapDir, "sites_map.html")
                             htmlFile.writeText(buildMapHtml(mappableSites))
                             loadUrl("file://${htmlFile.absolutePath}")
                         }.onFailure { e ->
-                            mapError = e.message ?: "impossibile preparare la mappa"
+                            mapError = "preparazione fallita: ${e.message}"
                         }
                     }
                 }
@@ -167,8 +196,8 @@ private fun buildMapHtml(sites: List<Site>): String {
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="file:///android_asset/leaflet/leaflet.css" />
-          <script src="file:///android_asset/leaflet/leaflet.js"></script>
+          <link rel="stylesheet" href="leaflet.css" />
+          <script src="leaflet.js"></script>
           <style>
             html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
             body { font-family: sans-serif; }
@@ -178,7 +207,6 @@ private fun buildMapHtml(sites: List<Site>): String {
         <body>
           <div id="map"></div>
           <script>
-            L.Icon.Default.prototype.options.imagePath = 'file:///android_asset/leaflet/images/';
             const map = L.map('map', { zoomControl: true });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 19,
