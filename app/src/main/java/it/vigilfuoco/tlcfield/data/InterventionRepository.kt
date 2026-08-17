@@ -72,6 +72,24 @@ object InterventionRepository {
             })
         }
         put("photos", photos)
+        val kairosAlarms = JSONArray()
+        i.kairosAlarmNumbers.forEach { kairosAlarms.put(it) }
+        put("kairosAlarmNumbers", kairosAlarms)
+        val kairosChecks = JSONArray()
+        i.kairosCompletedChecks.forEach { kairosChecks.put(it) }
+        put("kairosCompletedChecks", kairosChecks)
+        put("kairosDiagnosticNotes", i.kairosDiagnosticNotes)
+        i.kairosSnapshot?.let { k ->
+            put("kairosSnapshot", JSONObject().apply {
+                k.supplyVoltageV?.let { put("supplyVoltageV", it) }
+                k.txTemperatureC?.let { put("txTemperatureC", it) }
+                k.forwardPowerW?.let { put("forwardPowerW", it) }
+                k.reflectedPowerW?.let { put("reflectedPowerW", it) }
+                k.rssiMainDbm?.let { put("rssiMainDbm", it) }
+                k.rssiDiversityDbm?.let { put("rssiDiversityDbm", it) }
+                put("synchronizationSource", k.synchronizationSource)
+            })
+        }
     }
 
     private fun fromJson(o: JSONObject): Intervention {
@@ -94,6 +112,27 @@ object InterventionRepository {
                 category = p.optString("category", "Altro")
             )
         }
+        val kairosAlarmNumbers = mutableListOf<Int>()
+        val alarmArray = o.optJSONArray("kairosAlarmNumbers") ?: JSONArray()
+        for (i in 0 until alarmArray.length()) kairosAlarmNumbers += alarmArray.optInt(i)
+
+        val kairosCompletedChecks = mutableListOf<String>()
+        val checkArray = o.optJSONArray("kairosCompletedChecks") ?: JSONArray()
+        for (i in 0 until checkArray.length()) kairosCompletedChecks += checkArray.optString(i)
+
+        val snapshotObject = o.optJSONObject("kairosSnapshot")
+        val kairosSnapshot = snapshotObject?.let { k ->
+            KairosSnapshot(
+                supplyVoltageV = if (k.has("supplyVoltageV")) k.optDouble("supplyVoltageV") else null,
+                txTemperatureC = if (k.has("txTemperatureC")) k.optDouble("txTemperatureC") else null,
+                forwardPowerW = if (k.has("forwardPowerW")) k.optDouble("forwardPowerW") else null,
+                reflectedPowerW = if (k.has("reflectedPowerW")) k.optDouble("reflectedPowerW") else null,
+                rssiMainDbm = if (k.has("rssiMainDbm")) k.optInt("rssiMainDbm") else null,
+                rssiDiversityDbm = if (k.has("rssiDiversityDbm")) k.optInt("rssiDiversityDbm") else null,
+                synchronizationSource = k.optString("synchronizationSource")
+            )
+        }
+
         return Intervention(
             id = o.optString("id"),
             siteId = o.optString("siteId"),
@@ -109,7 +148,11 @@ object InterventionRepository {
             notes = o.optString("notes"),
             result = o.optString("result"),
             measurements = ms,
-            photos = photos
+            photos = photos,
+            kairosAlarmNumbers = kairosAlarmNumbers,
+            kairosCompletedChecks = kairosCompletedChecks,
+            kairosDiagnosticNotes = o.optString("kairosDiagnosticNotes"),
+            kairosSnapshot = kairosSnapshot
         )
     }
 }

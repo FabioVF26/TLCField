@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,13 +34,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import it.vigilfuoco.tlcfield.data.DocumentationRepository
+import it.vigilfuoco.tlcfield.data.PdfAssetOpener
 import it.vigilfuoco.tlcfield.data.RadioLink
 import it.vigilfuoco.tlcfield.data.SiteRepository
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SiteDetailScreen(siteId: String, onBack: () -> Unit) {
+fun SiteDetailScreen(
+    siteId: String,
+    onBack: () -> Unit,
+    onNewIntervention: (String) -> Unit = {}
+) {
     val site = SiteRepository.getSite(siteId)
     val context = LocalContext.current
 
@@ -66,6 +74,28 @@ fun SiteDetailScreen(siteId: String, onBack: () -> Unit) {
                 site.owner?.let { Text("Sito: $it") }
                 site.altitudeM?.let { Text("Quota: $it m") }
                 if (site.latitude != null && site.longitude != null) Text("Coordinate: ${site.latitude}, ${site.longitude}")
+            }
+
+            item {
+                Button(
+                    onClick = { onNewIntervention(site.id) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Build, null)
+                    Text("NUOVO INTERVENTO SU QUESTO SITO", modifier = Modifier.padding(start = 10.dp))
+                }
+            }
+
+            item {
+                DocumentationRepository.forSite(site.id)?.let { document ->
+                    OutlinedButton(
+                        onClick = { PdfAssetOpener.open(context, document) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Description, null)
+                        Text("APRI SCHEDA IMPIANTO PDF", modifier = Modifier.padding(start = 10.dp))
+                    }
+                }
             }
 
             item {

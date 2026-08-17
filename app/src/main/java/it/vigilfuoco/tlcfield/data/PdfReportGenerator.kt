@@ -110,6 +110,37 @@ object PdfReportGenerator {
             }
         }
 
+        if (intervention.kairosSnapshot != null || intervention.kairosAlarmNumbers.isNotEmpty()) {
+            section("Diagnosi KAIROS")
+            intervention.kairosSnapshot?.let { k ->
+                k.supplyVoltageV?.let { line("Input Supply Voltage: $it V") }
+                k.txTemperatureC?.let { line("TX Temperature: $it °C") }
+                k.forwardPowerW?.let { line("Forward Power: $it W") }
+                k.reflectedPowerW?.let { line("Reflected Power: $it W") }
+                k.rssiMainDbm?.let { line("RSSI Main: $it dBm") }
+                k.rssiDiversityDbm?.let { line("RSSI Diversity: $it dBm") }
+                if (k.synchronizationSource.isNotBlank()) line("Sincronizzazione: ${k.synchronizationSource}")
+            }
+            if (intervention.kairosAlarmNumbers.isEmpty()) {
+                line("Nessun allarme KAIROS registrato.")
+            } else {
+                intervention.kairosAlarmNumbers.forEach { number ->
+                    val alarm = KairosRepository.alarm(number)
+                    val guide = KairosRepository.guide(number)
+                    if (alarm != null) {
+                        line("Allarme ${alarm.number} — ${alarm.label} [${alarm.severity.label}]", heading)
+                        line("Area: ${alarm.diagnosticArea}", small)
+                        guide.checks.forEachIndexed { index, check ->
+                            val key = "$number|$index"
+                            val done = if (key in intervention.kairosCompletedChecks) "ESEGUITA" else "NON REGISTRATA"
+                            line("[$done] $check", small, 8f)
+                        }
+                    }
+                }
+            }
+            if (intervention.kairosDiagnosticNotes.isNotBlank()) line("Note diagnosi: ${intervention.kairosDiagnosticNotes}")
+        }
+
         section("Operazioni e conclusioni")
         line(intervention.notes.ifBlank { "Nessuna nota inserita." })
         line("Esito: ${intervention.result}", heading)

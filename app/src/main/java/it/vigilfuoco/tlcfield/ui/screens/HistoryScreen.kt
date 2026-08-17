@@ -56,6 +56,9 @@ fun HistoryScreen(onBack: () -> Unit) {
                             Text(formatter.format(Date(intervention.timestamp)))
                             Text("Tipo: ${intervention.type}")
                             Text("Esito: ${intervention.result}")
+                            if (intervention.kairosAlarmNumbers.isNotEmpty()) {
+                                Text("Diagnosi KAIROS: ${intervention.kairosAlarmNumbers.size} allarmi, ${intervention.kairosCompletedChecks.size} verifiche registrate")
+                            }
                             if (intervention.reportedProblem.isNotBlank()) Text("Segnalazione: ${intervention.reportedProblem}")
                             intervention.measurements.filter { it.measuredRssi != null }.forEach { m ->
                                 val delta = m.deltaDb?.let { " (Δ ${if (it > 0) "+" else ""}$it dB)" } ?: ""

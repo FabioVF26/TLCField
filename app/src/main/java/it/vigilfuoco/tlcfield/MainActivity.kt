@@ -19,22 +19,62 @@ class MainActivity : ComponentActivity() {
                     composable("home") {
                         HomeScreen(
                             onSites = { navController.navigate("sites") },
+                            onMap = { navController.navigate("sites_map") },
                             onNewIntervention = { navController.navigate("new_intervention") },
                             onHistory = { navController.navigate("history") },
-                            onDiagnosis = { navController.navigate("kairos_diagnosis") }
+                            onDiagnosis = { navController.navigate("kairos_diagnosis") },
+                            onDocumentation = { navController.navigate("documentation") },
+                            onRfTools = { navController.navigate("rf_tools") }
                         )
                     }
-                    composable("sites") { SitesScreen(onBack = { navController.popBackStack() }, onSiteSelected = { navController.navigate("site/$it") }) }
-                    composable("site/{siteId}") { entry -> SiteDetailScreen(entry.arguments?.getString("siteId").orEmpty(), onBack = { navController.popBackStack() }) }
+                    composable("sites") {
+                        SitesScreen(
+                            onBack = { navController.popBackStack() },
+                            onSiteSelected = { navController.navigate("site/$it") }
+                        )
+                    }
+                    composable("sites_map") {
+                        SitesMapScreen(
+                            onBack = { navController.popBackStack() },
+                            onSiteSelected = { navController.navigate("site/$it") }
+                        )
+                    }
+                    composable("site/{siteId}") { entry ->
+                        SiteDetailScreen(
+                            siteId = entry.arguments?.getString("siteId").orEmpty(),
+                            onBack = { navController.popBackStack() },
+                            onNewIntervention = { navController.navigate("new_intervention/$it") }
+                        )
+                    }
                     composable("new_intervention") {
                         NewInterventionScreen(
                             onBack = { navController.popBackStack() },
-                            onSaved = { navController.navigate("history") { popUpTo("new_intervention") { inclusive = true } } }
+                            onSaved = {
+                                navController.navigate("history") {
+                                    popUpTo("new_intervention") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                    composable("new_intervention/{siteId}") { entry ->
+                        NewInterventionScreen(
+                            initialSiteId = entry.arguments?.getString("siteId"),
+                            onBack = { navController.popBackStack() },
+                            onSaved = { navController.navigate("history") }
                         )
                     }
                     composable("history") { HistoryScreen(onBack = { navController.popBackStack() }) }
+                    composable("documentation") {
+                        DocumentationScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("rf_tools") {
+                        RfToolsScreen(onBack = { navController.popBackStack() })
+                    }
                     composable("kairos_diagnosis") {
-                        KairosDiagnosisScreen(onBack = { navController.popBackStack() }, onAlarms = { navController.navigate("kairos_alarms") })
+                        KairosDiagnosisScreen(
+                            onBack = { navController.popBackStack() },
+                            onAlarms = { navController.navigate("kairos_alarms") }
+                        )
                     }
                     composable("kairos_alarms") {
                         KairosAlarmScreen(

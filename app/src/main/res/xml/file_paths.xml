@@ -2,4 +2,5 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <files-path name="intervention_photos" path="intervention_photos/" />
     <external-files-path name="reports" path="Documents/reports/" />
+    <cache-path name="technical_docs" path="technical_docs/" />
 </paths>

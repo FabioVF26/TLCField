@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Radio
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -30,7 +31,15 @@ import androidx.compose.ui.unit.sp
 import it.vigilfuoco.tlcfield.R
 
 @Composable
-fun HomeScreen(onSites: () -> Unit, onNewIntervention: () -> Unit, onHistory: () -> Unit, onDiagnosis: () -> Unit) {
+fun HomeScreen(
+    onSites: () -> Unit,
+    onMap: () -> Unit,
+    onNewIntervention: () -> Unit,
+    onHistory: () -> Unit,
+    onDiagnosis: () -> Unit,
+    onDocumentation: () -> Unit,
+    onRfTools: () -> Unit
+) {
     Scaffold { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
@@ -48,13 +57,14 @@ fun HomeScreen(onSites: () -> Unit, onNewIntervention: () -> Unit, onHistory: ()
 
             HomeButton("NUOVO INTERVENTO", Icons.Default.Build, true, onNewIntervention)
             HomeButton("SITI / PONTI RADIO", Icons.Default.Radio, true, onSites)
-            HomeButton("MAPPA SITI", Icons.Default.Map, false) {}
+            HomeButton("MAPPA SITI", Icons.Default.Map, true, onMap)
             HomeButton("DIAGNOSI KAIROS", Icons.Default.SettingsInputAntenna, true, onDiagnosis)
-            HomeButton("DOCUMENTAZIONE", Icons.Default.Description, false) {}
+            HomeButton("DOCUMENTAZIONE", Icons.Default.Description, true, onDocumentation)
+            HomeButton("STRUMENTI RF", Icons.Default.Calculate, true, onRfTools)
             HomeButton("STORICO INTERVENTI", Icons.Default.History, true, onHistory)
 
             Text(
-                text = "Versione 0.5 — interventi, PDF, foto, diagnostica e supporto KAIROS.",
+                text = "Versione 1.0 — strumenti RF, biblioteca tecnica offline, interventi, mappa siti e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )

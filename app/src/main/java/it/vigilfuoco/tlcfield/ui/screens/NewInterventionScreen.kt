@@ -51,6 +51,8 @@ import androidx.compose.ui.unit.dp
 import it.vigilfuoco.tlcfield.data.Intervention
 import it.vigilfuoco.tlcfield.data.InterventionPhoto
 import it.vigilfuoco.tlcfield.data.InterventionRepository
+import it.vigilfuoco.tlcfield.data.KairosRepository
+import it.vigilfuoco.tlcfield.data.KairosSnapshot
 import it.vigilfuoco.tlcfield.data.PdfReportGenerator
 import it.vigilfuoco.tlcfield.data.PhotoStorage
 import it.vigilfuoco.tlcfield.data.RssiMeasurement
@@ -60,10 +62,16 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewInterventionScreen(onBack: () -> Unit, onSaved: () -> Unit) {
+fun NewInterventionScreen(
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    initialSiteId: String? = null
+) {
     val context = LocalContext.current
     val sites = SiteRepository.sites
-    var selectedSite by remember { mutableStateOf<Site?>(null) }
+    var selectedSite by remember(initialSiteId) {
+        mutableStateOf(initialSiteId?.let { SiteRepository.getSite(it) })
+    }
     var siteMenuOpen by remember { mutableStateOf(false) }
     var type by remember { mutableStateOf("Guasto") }
     var typeMenuOpen by remember { mutableStateOf(false) }
@@ -84,6 +92,19 @@ fun NewInterventionScreen(onBack: () -> Unit, onSaved: () -> Unit) {
     var pendingPhoto by remember { mutableStateOf<Pair<File, android.net.Uri>?>(null) }
     var showSaved by remember { mutableStateOf(false) }
     var savedIntervention by remember { mutableStateOf<Intervention?>(null) }
+
+    val selectedKairosAlarms = remember { mutableStateListOf<Int>() }
+    val completedKairosChecks = remember { mutableStateMapOf<String, Boolean>() }
+    var kairosAlarmMenuOpen by remember { mutableStateOf(false) }
+    var pendingKairosAlarm by remember { mutableStateOf(KairosRepository.alarms.first().number) }
+    var kairosDiagnosticNotes by remember { mutableStateOf("") }
+    var kairosSupplyVoltage by remember { mutableStateOf("") }
+    var kairosTxTemperature by remember { mutableStateOf("") }
+    var kairosForwardPower by remember { mutableStateOf("") }
+    var kairosReflectedPower by remember { mutableStateOf("") }
+    var kairosRssiMain by remember { mutableStateOf("") }
+    var kairosRssiDiversity by remember { mutableStateOf("") }
+    var kairosSyncSource by remember { mutableStateOf("") }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         val pending = pendingPhoto
@@ -114,7 +135,21 @@ fun NewInterventionScreen(onBack: () -> Unit, onSaved: () -> Unit) {
             notes = notes.trim(),
             result = result,
             measurements = measurements,
-            photos = photos.toList()
+            photos = photos.toList(),
+            kairosAlarmNumbers = selectedKairosAlarms.toList(),
+            kairosCompletedChecks = completedKairosChecks.filterValues { it }.keys.toList(),
+            kairosDiagnosticNotes = kairosDiagnosticNotes.trim(),
+            kairosSnapshot = if (site.kairosEndpoints.isNotEmpty() || selectedKairosAlarms.isNotEmpty()) {
+                KairosSnapshot(
+                    supplyVoltageV = kairosSupplyVoltage.replace(',', '.').toDoubleOrNull(),
+                    txTemperatureC = kairosTxTemperature.replace(',', '.').toDoubleOrNull(),
+                    forwardPowerW = kairosForwardPower.replace(',', '.').toDoubleOrNull(),
+                    reflectedPowerW = kairosReflectedPower.replace(',', '.').toDoubleOrNull(),
+                    rssiMainDbm = kairosRssiMain.toIntOrNull(),
+                    rssiDiversityDbm = kairosRssiDiversity.toIntOrNull(),
+                    synchronizationSource = kairosSyncSource.trim()
+                )
+            } else null
         )
     }
 
@@ -146,7 +181,7 @@ fun NewInterventionScreen(onBack: () -> Unit, onSaved: () -> Unit) {
                         sites.forEach { site ->
                             DropdownMenuItem(
                                 text = { Text(site.name + (site.code?.let { " — $it" } ?: "")) },
-                                onClick = { selectedSite = site; measuredRssi.clear(); siteMenuOpen = false }
+                                onClick = { selectedSite = site; measuredRssi.clear(); selectedKairosAlarms.clear(); completedKairosChecks.clear(); kairosDiagnosticNotes = ""; siteMenuOpen = false }
                             )
                         }
                     }
@@ -199,6 +234,94 @@ fun NewInterventionScreen(onBack: () -> Unit, onSaved: () -> Unit) {
             item { CheckRow("Apparato radio acceso", radioOn) { radioOn = it } }
             item { CheckRow("Allarmi presenti", alarms) { alarms = it } }
             item { CheckRow("Collegamento dati / IP operativo", ipLinkOk) { ipLinkOk = it } }
+
+            selectedSite?.takeIf { it.kairosEndpoints.isNotEmpty() }?.let { site ->
+                item { SectionTitle("Diagnosi KAIROS") }
+                item {
+                    Text(
+                        "Registrare i parametri letti dall'apparato e gli allarmi effettivamente presenti. Le verifiche selezionate saranno riportate nel rapporto PDF.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Parametri KAIROS", style = MaterialTheme.typography.titleMedium)
+                            OutlinedTextField(kairosSupplyVoltage, { kairosSupplyVoltage = it }, label = { Text("Input Supply Voltage (V)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosTxTemperature, { kairosTxTemperature = it }, label = { Text("TX Temperature (°C)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosForwardPower, { kairosForwardPower = it }, label = { Text("Forward Power (W)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosReflectedPower, { kairosReflectedPower = it }, label = { Text("Reflected Power (W)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosRssiMain, { kairosRssiMain = it.filter { c -> c == '-' || c.isDigit() }.take(4) }, label = { Text("RSSI Main (dBm)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosRssiDiversity, { kairosRssiDiversity = it.filter { c -> c == '-' || c.isDigit() }.take(4) }, label = { Text("RSSI Diversity (dBm)") }, modifier = Modifier.fillMaxWidth())
+                            OutlinedTextField(kairosSyncSource, { kairosSyncSource = it }, label = { Text("Sorgente di sincronizzazione / Lock") }, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+                item {
+                    ExposedDropdownMenuBox(expanded = kairosAlarmMenuOpen, onExpandedChange = { kairosAlarmMenuOpen = !kairosAlarmMenuOpen }) {
+                        val current = KairosRepository.alarm(pendingKairosAlarm)
+                        OutlinedTextField(
+                            value = current?.let { "${it.number} — ${it.label}" } ?: "",
+                            onValueChange = {}, readOnly = true,
+                            label = { Text("Allarme KAIROS") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(kairosAlarmMenuOpen) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(expanded = kairosAlarmMenuOpen, onDismissRequest = { kairosAlarmMenuOpen = false }) {
+                            KairosRepository.alarms.forEach { alarm ->
+                                DropdownMenuItem(
+                                    text = { Text("${alarm.number} — ${alarm.label} [${alarm.severity.label}]") },
+                                    onClick = { pendingKairosAlarm = alarm.number; kairosAlarmMenuOpen = false }
+                                )
+                            }
+                        }
+                    }
+                }
+                item {
+                    OutlinedButton(
+                        onClick = { if (pendingKairosAlarm !in selectedKairosAlarms) selectedKairosAlarms += pendingKairosAlarm },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("AGGIUNGI ALLARME ALL'INTERVENTO") }
+                }
+                items(selectedKairosAlarms, key = { it }) { alarmNumber ->
+                    val alarm = KairosRepository.alarm(alarmNumber)
+                    val guide = KairosRepository.guide(alarmNumber)
+                    if (alarm != null) {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text("${alarm.number} — ${alarm.label}", style = MaterialTheme.typography.titleMedium)
+                                        Text("${alarm.severity.label} · ${alarm.diagnosticArea}", fontWeight = FontWeight.Bold)
+                                    }
+                                    IconButton(onClick = {
+                                        selectedKairosAlarms.remove(alarmNumber)
+                                        guide.checks.indices.forEach { completedKairosChecks.remove("$alarmNumber|$it") }
+                                    }) { Icon(Icons.Default.Delete, contentDescription = "Rimuovi allarme") }
+                                }
+                                Text(guide.meaning, style = MaterialTheme.typography.bodySmall)
+                                if (guide.values.isNotEmpty()) {
+                                    guide.values.forEach { Text("• $it", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold) }
+                                }
+                                Text("Verifiche eseguite", fontWeight = FontWeight.Bold)
+                                guide.checks.forEachIndexed { index, check ->
+                                    val key = "$alarmNumber|$index"
+                                    CheckRow(check, completedKairosChecks[key] == true) { completedKairosChecks[key] = it }
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    OutlinedTextField(
+                        kairosDiagnosticNotes,
+                        { kairosDiagnosticNotes = it },
+                        label = { Text("Note diagnosi KAIROS") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
 
             item { SectionTitle("Documentazione fotografica") }
             item {

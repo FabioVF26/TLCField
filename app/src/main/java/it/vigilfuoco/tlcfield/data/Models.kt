@@ -45,6 +45,16 @@ data class InterventionPhoto(
     val category: String
 )
 
+data class KairosSnapshot(
+    val supplyVoltageV: Double? = null,
+    val txTemperatureC: Double? = null,
+    val forwardPowerW: Double? = null,
+    val reflectedPowerW: Double? = null,
+    val rssiMainDbm: Int? = null,
+    val rssiDiversityDbm: Int? = null,
+    val synchronizationSource: String = ""
+)
+
 data class Intervention(
     val id: String,
     val siteId: String,
@@ -60,7 +70,11 @@ data class Intervention(
     val notes: String,
     val result: String,
     val measurements: List<RssiMeasurement>,
-    val photos: List<InterventionPhoto> = emptyList()
+    val photos: List<InterventionPhoto> = emptyList(),
+    val kairosAlarmNumbers: List<Int> = emptyList(),
+    val kairosCompletedChecks: List<String> = emptyList(),
+    val kairosDiagnosticNotes: String = "",
+    val kairosSnapshot: KairosSnapshot? = null
 )
 
 enum class AlarmSeverity(val level: Int, val label: String) {

@@ -1,29 +1,39 @@
-# TLC Field Android 0.6
+# TLC Field Android 0.9
 
-Prototipo Android per supporto tecnico agli interventi sui ponti radio VVF.
+App Android per supporto tecnico agli interventi sui ponti radio VVF.
 
-## Novità 0.6
-- Catalogo allarmi KAIROS selezionabile.
-- Scheda diagnostica per singolo allarme.
-- Significato dell'evento ricavato dalla documentazione KAIROS allegata.
-- Soglie documentate per alimentazione, temperature, potenza TX e SWR.
-- Verifiche guidate basate su KAIROS Manager / Alarm Events Subsystem.
-- Richiami a Analog Measures, TRX Status, DMR Status e Primary Synchronization Status.
-- Precauzioni esplicite per restart, Vtune e shutdown.
-- Nessuna modifica automatica della configurazione dell'apparato.
+## Novità 0.7
+- Diagnosi KAIROS integrata direttamente nel Nuovo intervento.
+- Selezione di uno o più allarmi KAIROS realmente riscontrati.
+- Checklist diagnostica specifica per ciascun allarme.
+- Registrazione delle verifiche effettivamente eseguite dal tecnico.
+- Acquisizione dei principali parametri KAIROS: tensione di alimentazione, temperatura TX, potenza diretta/riflessa, RSSI Main/Diversity e sorgente di sincronizzazione.
+- Salvataggio offline di allarmi, verifiche e misure insieme all'intervento.
+- Rapporto PDF aggiornato con una sezione Diagnosi KAIROS.
+- Storico interventi con riepilogo delle verifiche KAIROS registrate.
+- Compatibilità con gli interventi già salvati nelle versioni precedenti.
 
 ## Funzioni già presenti
 - Home con logo TLC/VVF.
 - Archivio siti e ponti radio.
-- Apertura navigazione Google Maps tramite coordinate.
+- Navigazione verso il sito con Google Maps.
 - Accesso Web Interface KAIROS per gli IP censiti.
-- Nuovo intervento con misure RSSI e scostamento dal riferimento.
+- Misure RSSI con confronto rispetto ai valori di riferimento del sito.
 - Fotografie associate all'intervento.
-- Storico interventi offline.
-- Generazione rapporto PDF.
-- Diagnosi guidata KAIROS.
+- Storico locale offline.
+- Generazione e condivisione del rapporto PDF.
+- Catalogo e guida diagnostica degli allarmi KAIROS.
 
-## Nota tecnica
-I dati diagnostici sono stati costruiti esclusivamente sulla documentazione tecnica fornita. Dove il costruttore non indica una procedura di troubleshooting univoca, l'app mostra una guida prudenziale e rimanda al manuale.
+## Nota operativa
+La diagnostica non modifica automaticamente la configurazione dell'apparato. Le procedure e le soglie KAIROS derivano dalla documentazione tecnica fornita e le verifiche vengono registrate solo quando il tecnico le marca come eseguite.
 
-Il progetto deve essere aperto e compilato con Android Studio per produrre l'APK.
+## Novità 0.9
+La Home include ora la Mappa Siti. I marker aprono la relativa scheda tecnica e da ciascun sito è possibile avviare un nuovo intervento con il sito già selezionato. La cartografia usa OpenStreetMap/Leaflet e richiede connessione dati; la navigazione verso il sito continua ad aprirsi con Google Maps tramite Intent Android.
+
+
+## Novità 0.9
+- Sezione DOCUMENTAZIONE attiva dalla Home.
+- 6 manuali KAIROS consultabili offline.
+- 9 schede impianto dei siti consultabili offline.
+- Apertura diretta della scheda PDF dalla pagina del sito.
+- I PDF sono inclusi negli assets e copiati in cache solo al momento dell'apertura.

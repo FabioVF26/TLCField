@@ -11,7 +11,7 @@ Ecco due modi semplici per ottenerlo comunque.
    - Via web: trascina i file nella pagina "Add file > Upload files".
    - Via terminale:
      ```bash
-     cd TLCField_0.6
+     cd TLCField_0.9
      git init
      git add .
      git commit -m "Initial commit"
@@ -33,7 +33,7 @@ o confermare l'installazione da file), ma non per pubblicarlo su Google Play.
 ## Opzione B — Android Studio (in locale)
 
 1. Installa [Android Studio](https://developer.android.com/studio).
-2. Apri la cartella `TLCField_0.6` come progetto esistente.
+2. Apri la cartella `TLCField_0.9` come progetto esistente.
 3. Al primo avvio, Android Studio rigenera automaticamente i file mancanti
    del wrapper Gradle (`gradlew`) e scarica le dipendenze.
 4. Menu **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
