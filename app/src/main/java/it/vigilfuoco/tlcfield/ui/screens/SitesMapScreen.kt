@@ -94,7 +94,7 @@ fun SitesMapScreen(
                             }
                         }
                         loadDataWithBaseURL(
-                            "https://www.openstreetmap.org/",
+                            "file:///android_asset/leaflet/",
                             buildMapHtml(mappableSites),
                             "text/html",
                             "UTF-8",
@@ -128,8 +128,8 @@ private fun buildMapHtml(sites: List<Site>): String {
         <html>
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-          <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-          <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+          <link rel="stylesheet" href="leaflet.css" />
+          <script src="leaflet.js"></script>
           <style>
             html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
             body { font-family: sans-serif; }
@@ -139,6 +139,7 @@ private fun buildMapHtml(sites: List<Site>): String {
         <body>
           <div id="map"></div>
           <script>
+            L.Icon.Default.prototype.options.imagePath = 'images/';
             const map = L.map('map', { zoomControl: true });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 19,
