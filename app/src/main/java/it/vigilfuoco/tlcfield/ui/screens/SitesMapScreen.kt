@@ -152,6 +152,14 @@ fun SitesMapScreen(
                                     val clean = result?.trim('"') ?: "nessuna risposta"
                                     mapStatus = clean
                                     if (clean.startsWith("ERRORE")) mapError = clean
+
+                                    view?.postDelayed({
+                                        view.evaluateJavascript(
+                                            "(function(){var el=document.getElementById('map'); return 'ricontrollo dopo 2s: ' + el.offsetWidth + 'x' + el.offsetHeight;})()"
+                                        ) { result2 ->
+                                            mapStatus = (result2?.trim('"') ?: "") + "  |  " + clean
+                                        }
+                                    }, 2000)
                                 }
                             }
 
@@ -255,6 +263,24 @@ private fun buildMapHtml(sites: List<Site>): String {
               map.setView([41.9, 12.5], 7);
             }
             setTimeout(function(){ map.invalidateSize(); }, 300);
+
+            // Il contenitore puo' avere altezza 0 nell'istante esatto in cui la mappa
+            // si inizializza (la WebView non ha ancora ricevuto le dimensioni definitive
+            // da Android). Osserviamo il contenitore e ridisegniamo la mappa ogni volta
+            // che le sue dimensioni cambiano, cosi' non resta mai bloccata a 0.
+            var mapEl = document.getElementById('map');
+            function fixSize() { map.invalidateSize(); }
+            if (window.ResizeObserver) {
+              new ResizeObserver(fixSize).observe(mapEl);
+            } else {
+              var tries = 0;
+              var iv = setInterval(function(){
+                fixSize();
+                tries++;
+                if (tries > 20) clearInterval(iv);
+              }, 250);
+            }
+            window.addEventListener('resize', fixSize);
           </script>
         </body>
         </html>
