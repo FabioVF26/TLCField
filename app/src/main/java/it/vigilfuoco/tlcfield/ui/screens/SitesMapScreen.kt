@@ -9,6 +9,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -105,10 +106,19 @@ fun SitesMapScreen(
                 }
             }
 
-            AndroidView(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                factory = { ctx ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
                     WebView(ctx).apply {
+                        layoutParams = android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.loadsImagesAutomatically = true
@@ -211,8 +221,9 @@ fun SitesMapScreen(
                             mapStatus = "preparazione fallita"
                         }
                     }
-                }
-            )
+                    }
+                )
+            }
         }
     }
 }
