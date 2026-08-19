@@ -49,6 +49,7 @@ fun SitesMapScreen(
         it.latitude != null && it.longitude != null && it.navigationVerified
     }
     var mapError by remember { mutableStateOf<String?>(null) }
+    var mapStatus by remember { mutableStateOf("in preparazione…") }
 
     Scaffold(
         topBar = {
@@ -80,6 +81,13 @@ fun SitesMapScreen(
                     )
                 }
             }
+
+            Text(
+                "Stato mappa: $mapStatus",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             mapError?.let { error ->
                 Card(
@@ -123,6 +131,30 @@ fun SitesMapScreen(
                                 return false
                             }
 
+                            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                super.onPageStarted(view, url, favicon)
+                                mapStatus = "pagina in caricamento…"
+                            }
+
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                mapStatus = "pagina caricata, verifico Leaflet…"
+                                view?.evaluateJavascript(
+                                    "(function(){try{" +
+                                        "if (typeof L === 'undefined') return 'ERRORE: libreria Leaflet non caricata';" +
+                                        "if (typeof map === 'undefined') return 'ERRORE: mappa non inizializzata';" +
+                                        "window.dispatchEvent(new Event('resize'));" +
+                                        "map.invalidateSize();" +
+                                        "var el = document.getElementById('map');" +
+                                        "return 'OK: leaflet caricato, contenitore ' + el.offsetWidth + 'x' + el.offsetHeight;" +
+                                        "}catch(e){return 'ERRORE JS: ' + e.message;}})()"
+                                ) { result ->
+                                    val clean = result?.trim('"') ?: "nessuna risposta"
+                                    mapStatus = clean
+                                    if (clean.startsWith("ERRORE")) mapError = clean
+                                }
+                            }
+
                             override fun onReceivedError(
                                 view: WebView?,
                                 request: WebResourceRequest?,
@@ -164,9 +196,11 @@ fun SitesMapScreen(
 
                             val htmlFile = File(mapDir, "sites_map.html")
                             htmlFile.writeText(buildMapHtml(mappableSites))
+                            mapStatus = "file pronti, avvio caricamento…"
                             loadUrl("file://${htmlFile.absolutePath}")
                         }.onFailure { e ->
                             mapError = "preparazione fallita: ${e.message}"
+                            mapStatus = "preparazione fallita"
                         }
                     }
                 }
@@ -199,7 +233,8 @@ private fun buildMapHtml(sites: List<Site>): String {
           <link rel="stylesheet" href="leaflet.css" />
           <script src="leaflet.js"></script>
           <style>
-            html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; }
+            html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
+            #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
             body { font-family: sans-serif; }
             .leaflet-popup-content { font-size: 14px; line-height: 1.35; }
           </style>
@@ -207,18 +242,19 @@ private fun buildMapHtml(sites: List<Site>): String {
         <body>
           <div id="map"></div>
           <script>
-            const map = L.map('map', { zoomControl: true });
+            var map = L.map('map', { zoomControl: true });
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
               maxZoom: 19,
               attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
-            const bounds = [];
+            var bounds = [];
             $markers
             if (bounds.length > 0) {
               map.fitBounds(bounds, {padding: [30, 30], maxZoom: 10});
             } else {
               map.setView([41.9, 12.5], 7);
             }
+            setTimeout(function(){ map.invalidateSize(); }, 300);
           </script>
         </body>
         </html>
