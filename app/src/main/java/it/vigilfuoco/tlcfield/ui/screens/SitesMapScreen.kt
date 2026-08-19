@@ -50,7 +50,6 @@ fun SitesMapScreen(
         it.latitude != null && it.longitude != null && it.navigationVerified
     }
     var mapError by remember { mutableStateOf<String?>(null) }
-    var mapStatus by remember { mutableStateOf("in preparazione…") }
 
     Scaffold(
         topBar = {
@@ -82,13 +81,6 @@ fun SitesMapScreen(
                     )
                 }
             }
-
-            Text(
-                "Stato mappa: $mapStatus",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
 
             mapError?.let { error ->
                 Card(
@@ -143,33 +135,20 @@ fun SitesMapScreen(
 
                             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                                 super.onPageStarted(view, url, favicon)
-                                mapStatus = "pagina in caricamento…"
                             }
 
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 super.onPageFinished(view, url)
-                                mapStatus = "pagina caricata, verifico Leaflet…"
                                 view?.evaluateJavascript(
                                     "(function(){try{" +
                                         "if (typeof L === 'undefined') return 'ERRORE: libreria Leaflet non caricata';" +
                                         "if (typeof map === 'undefined') return 'ERRORE: mappa non inizializzata';" +
-                                        "window.dispatchEvent(new Event('resize'));" +
                                         "map.invalidateSize();" +
-                                        "var el = document.getElementById('map');" +
-                                        "return 'OK: leaflet caricato, contenitore ' + el.offsetWidth + 'x' + el.offsetHeight;" +
+                                        "return 'OK';" +
                                         "}catch(e){return 'ERRORE JS: ' + e.message;}})()"
                                 ) { result ->
-                                    val clean = result?.trim('"') ?: "nessuna risposta"
-                                    mapStatus = clean
+                                    val clean = result?.trim('"') ?: ""
                                     if (clean.startsWith("ERRORE")) mapError = clean
-
-                                    view?.postDelayed({
-                                        view.evaluateJavascript(
-                                            "(function(){var el=document.getElementById('map'); return 'ricontrollo dopo 2s: ' + el.offsetWidth + 'x' + el.offsetHeight;})()"
-                                        ) { result2 ->
-                                            mapStatus = (result2?.trim('"') ?: "") + "  |  " + clean
-                                        }
-                                    }, 2000)
                                 }
                             }
 
@@ -214,11 +193,9 @@ fun SitesMapScreen(
 
                             val htmlFile = File(mapDir, "sites_map.html")
                             htmlFile.writeText(buildMapHtml(mappableSites))
-                            mapStatus = "file pronti, avvio caricamento…"
                             loadUrl("file://${htmlFile.absolutePath}")
                         }.onFailure { e ->
                             mapError = "preparazione fallita: ${e.message}"
-                            mapStatus = "preparazione fallita"
                         }
                     }
                     }
