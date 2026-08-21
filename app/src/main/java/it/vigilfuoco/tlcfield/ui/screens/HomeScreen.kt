@@ -64,7 +64,7 @@ fun HomeScreen(
             HomeButton("STORICO INTERVENTI", Icons.Default.History, true, onHistory)
 
             Text(
-                text = "Versione 1.0 — strumenti RF, biblioteca tecnica offline, interventi, mappa siti e diagnostica KAIROS.",
+                text = "Versione 1.1 — storico interventi organizzato in cartelle per sito, strumenti RF, biblioteca tecnica offline, mappa e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )
