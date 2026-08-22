@@ -11,8 +11,8 @@ android {
         applicationId = "it.vigilfuoco.tlcfield"
         minSdk = 26
         targetSdk = 37
-        versionCode = 11
-        versionName = "1.1.0"
+        versionCode = 12
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

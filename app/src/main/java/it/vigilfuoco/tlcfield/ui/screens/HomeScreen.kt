@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.SettingsInputAntenna
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +39,8 @@ fun HomeScreen(
     onHistory: () -> Unit,
     onDiagnosis: () -> Unit,
     onDocumentation: () -> Unit,
-    onRfTools: () -> Unit
+    onRfTools: () -> Unit,
+    onServer: () -> Unit
 ) {
     Scaffold { padding ->
         Column(
@@ -62,9 +64,10 @@ fun HomeScreen(
             HomeButton("DOCUMENTAZIONE", Icons.Default.Description, true, onDocumentation)
             HomeButton("STRUMENTI RF", Icons.Default.Calculate, true, onRfTools)
             HomeButton("STORICO INTERVENTI", Icons.Default.History, true, onHistory)
+            HomeButton("SERVER / SINCRONIZZAZIONE", Icons.Default.CloudSync, true, onServer)
 
             Text(
-                text = "Versione 1.1 — storico interventi organizzato in cartelle per sito, strumenti RF, biblioteca tecnica offline, mappa e diagnostica KAIROS.",
+                text = "Versione 1.2 — database locale + sincronizzazione con server centrale, storico per sito, strumenti RF e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )

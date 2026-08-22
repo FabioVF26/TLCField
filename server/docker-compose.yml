@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tlcfield
+      POSTGRES_USER: tlcfield
+      POSTGRES_PASSWORD: change_me_now
+    volumes:
+      - tlcfield_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tlcfield -d tlcfield"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://tlcfield:change_me_now@db:5432/tlcfield
+      TLCFIELD_API_TOKEN: change_this_token
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  tlcfield_pgdata:

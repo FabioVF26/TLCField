@@ -34,6 +34,18 @@ object InterventionRepository {
 
     fun newId(): String = UUID.randomUUID().toString()
 
+    fun replaceAll(context: Context, items: List<Intervention>) {
+        persist(context, items.sortedByDescending { it.timestamp })
+    }
+
+    fun merge(context: Context, remote: List<Intervention>) {
+        val merged = LinkedHashMap<String, Intervention>()
+        (getAll(context) + remote).sortedByDescending { it.timestamp }.forEach { item ->
+            if (!merged.containsKey(item.id)) merged[item.id] = item
+        }
+        persist(context, merged.values.toList())
+    }
+
     private fun persist(context: Context, items: List<Intervention>) {
         val array = JSONArray()
         items.forEach { array.put(toJson(it)) }
@@ -41,7 +53,7 @@ object InterventionRepository {
             .edit().putString(KEY, array.toString()).apply()
     }
 
-    private fun toJson(i: Intervention) = JSONObject().apply {
+    fun toJson(i: Intervention) = JSONObject().apply {
         put("id", i.id)
         put("siteId", i.siteId)
         put("siteName", i.siteName)
@@ -92,7 +104,7 @@ object InterventionRepository {
         }
     }
 
-    private fun fromJson(o: JSONObject): Intervention {
+    fun fromJson(o: JSONObject): Intervention {
         val ms = mutableListOf<RssiMeasurement>()
         val arr = o.optJSONArray("measurements") ?: JSONArray()
         for (i in 0 until arr.length()) {

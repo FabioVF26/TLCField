@@ -24,7 +24,8 @@ class MainActivity : ComponentActivity() {
                             onHistory = { navController.navigate("history") },
                             onDiagnosis = { navController.navigate("kairos_diagnosis") },
                             onDocumentation = { navController.navigate("documentation") },
-                            onRfTools = { navController.navigate("rf_tools") }
+                            onRfTools = { navController.navigate("rf_tools") },
+                            onServer = { navController.navigate("server_sync") }
                         )
                     }
                     composable("sites") {
@@ -69,6 +70,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable("rf_tools") {
                         RfToolsScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("server_sync") {
+                        ServerSyncScreen(onBack = { navController.popBackStack() })
                     }
                     composable("kairos_diagnosis") {
                         KairosDiagnosisScreen(
