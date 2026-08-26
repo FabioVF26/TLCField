@@ -6,11 +6,18 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import it.vigilfuoco.tlcfield.data.SiteCacheRepository
+import it.vigilfuoco.tlcfield.data.SiteRepository
 import it.vigilfuoco.tlcfield.ui.screens.*
 import it.vigilfuoco.tlcfield.ui.theme.TLCFieldTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val cachedSites = SiteCacheRepository.load(this)
+
+if (cachedSites.isNotEmpty()) {
+    SiteRepository.updateFromServer(cachedSites)
+}
         super.onCreate(savedInstanceState)
         setContent {
             TLCFieldTheme {
