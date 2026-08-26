@@ -77,14 +77,18 @@ object SyncRepository {
         ) = ServerApi.downloadSites(settings)
 
         if (
-            sitesResult.ok &&
-            remoteSites.isNotEmpty()
-        ) {
-            SiteRepository.updateFromServer(
-                remoteSites
-            )
-        }
+    sitesResult.ok &&
+    remoteSites.isNotEmpty()
+) {
+    SiteCacheRepository.save(
+        context,
+        remoteSites
+    )
 
+    SiteRepository.updateFromServer(
+        remoteSites
+    )
+}
         val interventionsOk =
             downloadResult.ok
 
