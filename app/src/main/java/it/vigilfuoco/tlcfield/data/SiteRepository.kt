@@ -1,7 +1,8 @@
 package it.vigilfuoco.tlcfield.data
 
 object SiteRepository {
-    val sites = listOf(
+
+    private val localSites = listOf(
         Site(
             id = "cavo-snam",
             name = "Monte Cavo SNAM",
