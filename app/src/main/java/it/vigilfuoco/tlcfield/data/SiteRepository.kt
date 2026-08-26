@@ -172,7 +172,27 @@ object SiteRepository {
                 RadioLink("Terminillo 202", "Nodo", -82)
             )
         )
-    )
+        )
 
-    fun getSite(id: String): Site? = sites.firstOrNull { it.id == id }
+    @Volatile
+    private var remoteSites: List<Site>? = null
+
+    val sites: List<Site>
+        get() = remoteSites ?: localSites
+
+    fun getSite(id: String): Site? =
+        sites.firstOrNull { it.id == id }
+
+    fun updateFromServer(sites: List<Site>) {
+        if (sites.isNotEmpty()) {
+            remoteSites = sites
+        }
+    }
+
+    fun useLocalFallback() {
+        remoteSites = null
+    }
+
+    fun isUsingRemoteData(): Boolean =
+        remoteSites != null
 }
