@@ -697,6 +697,41 @@ object PdfReportGenerator {
         }
 
         // =====================================================
+        // PERSONALE E AUTOMEZZI
+        // =====================================================
+
+        section(
+            "Personale intervenuto"
+        )
+
+        if (intervention.personnel.isEmpty()) {
+            textLine("Nessun nominativo registrato.")
+        } else {
+            intervention.personnel.forEachIndexed { index, person ->
+                val qualification = person.qualification.ifBlank { "—" }
+                infoRow(
+                    "Operatore ${index + 1}",
+                    "$qualification — ${person.fullName}"
+                )
+            }
+        }
+
+        section(
+            "Automezzi utilizzati"
+        )
+
+        if (intervention.vehicles.isEmpty()) {
+            textLine("Nessun automezzo registrato.")
+        } else {
+            intervention.vehicles.forEachIndexed { index, vehicle ->
+                infoRow(
+                    "Mezzo ${index + 1}",
+                    "${vehicle.description} — ${vehicle.plate}"
+                )
+            }
+        }
+
+        // =====================================================
         // SEGNALAZIONE
         // =====================================================
 

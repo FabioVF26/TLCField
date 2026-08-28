@@ -50,6 +50,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import it.vigilfuoco.tlcfield.data.Intervention
 import it.vigilfuoco.tlcfield.data.InterventionPhoto
+import it.vigilfuoco.tlcfield.data.InterventionPersonnel
+import it.vigilfuoco.tlcfield.data.InterventionVehicle
 import it.vigilfuoco.tlcfield.data.InterventionRepository
 import it.vigilfuoco.tlcfield.data.KairosRepository
 import it.vigilfuoco.tlcfield.data.KairosSnapshot
@@ -309,6 +311,24 @@ fun NewInterventionScreen(
             result = result,
             measurements = measurements,
             photos = photos.toList(),
+            personnel = personnel
+                .filter { it.id in selectedPersonnelIds }
+                .map { person ->
+                    InterventionPersonnel(
+                        id = person.id,
+                        qualification = person.qualification,
+                        fullName = person.fullName
+                    )
+                },
+            vehicles = vehicles
+                .filter { it.id in selectedVehicleIds }
+                .map { vehicle ->
+                    InterventionVehicle(
+                        id = vehicle.id,
+                        description = vehicle.description,
+                        plate = vehicle.plate
+                    )
+                },
             kairosAlarmNumbers =
                 selectedKairosAlarms.toList(),
             kairosCompletedChecks =

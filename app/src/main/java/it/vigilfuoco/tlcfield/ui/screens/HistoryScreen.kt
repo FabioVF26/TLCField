@@ -216,6 +216,24 @@ private fun SiteInterventionList(
                     Text(formatter.format(Date(intervention.timestamp)), style = MaterialTheme.typography.titleMedium)
                     Text("Tipo: ${intervention.type}")
                     Text("Esito: ${intervention.result}")
+                    if (intervention.personnel.isNotEmpty()) {
+                        Text(
+                            "Personale: " + intervention.personnel.joinToString(", ") { person ->
+                                listOf(person.qualification, person.fullName)
+                                    .filter { it.isNotBlank() }
+                                    .joinToString(" ")
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (intervention.vehicles.isNotEmpty()) {
+                        Text(
+                            "Mezzi: " + intervention.vehicles.joinToString(", ") { vehicle ->
+                                "${vehicle.description} (${vehicle.plate})"
+                            },
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                     if (intervention.kairosAlarmNumbers.isNotEmpty()) {
                         Text("Diagnosi KAIROS: ${intervention.kairosAlarmNumbers.size} allarmi, ${intervention.kairosCompletedChecks.size} verifiche registrate")
                     }
