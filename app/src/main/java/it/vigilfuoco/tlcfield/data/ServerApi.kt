@@ -158,6 +158,57 @@ object ServerApi {
 
 
     // ========================================================
+    // INTERVENTI - DELETE
+    // ========================================================
+
+    fun deleteIntervention(
+        settings: ServerSettingsRepository.Settings,
+        interventionId: String
+    ): Result = runCatching {
+
+        val encodedId = java.net.URLEncoder.encode(
+            interventionId,
+            Charsets.UTF_8.name()
+        )
+
+        val c = connection(
+            settings,
+            "/api/v1/interventions/$encodedId",
+            "DELETE"
+        )
+
+        val code = c.responseCode
+
+        val body = (
+            if (code in 200..299) {
+                c.inputStream
+            } else {
+                c.errorStream
+            }
+        )?.bufferedReader()?.use {
+            it.readText()
+        }.orEmpty()
+
+        Result(
+            ok = code in 200..299 || code == 404,
+            message = if (code in 200..299 || code == 404) {
+                "Intervento eliminato"
+            } else {
+                "HTTP $code"
+            },
+            body = body
+        )
+
+    }.getOrElse {
+
+        Result(
+            false,
+            it.message ?: "Errore durante l'eliminazione dell'intervento"
+        )
+    }
+
+
+    // ========================================================
     // INTERVENTI - DOWNLOAD
     // ========================================================
 

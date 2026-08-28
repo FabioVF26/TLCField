@@ -89,6 +89,7 @@ data class Intervention(
     val siteId: String,
     val siteName: String,
     val timestamp: Long,
+    val lastModified: Long = timestamp,
     val type: String,
     val reportedProblem: String,
     val initialState: String,

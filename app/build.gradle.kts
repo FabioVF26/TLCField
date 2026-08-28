@@ -11,8 +11,8 @@ android {
         applicationId = "it.vigilfuoco.tlcfield"
         minSdk = 26
         targetSdk = 37
-        versionCode = 12
-        versionName = "1.2.0"
+        versionCode = 14
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,6 +39,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.18.0")
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")

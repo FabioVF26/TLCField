@@ -1,6 +1,5 @@
 package it.vigilfuoco.tlcfield.ui.screens
 
-import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -56,10 +55,12 @@ import it.vigilfuoco.tlcfield.data.InterventionRepository
 import it.vigilfuoco.tlcfield.data.KairosRepository
 import it.vigilfuoco.tlcfield.data.KairosSnapshot
 import it.vigilfuoco.tlcfield.data.PdfReportGenerator
+import it.vigilfuoco.tlcfield.data.Personnel
 import it.vigilfuoco.tlcfield.data.PersonnelRepository
 import it.vigilfuoco.tlcfield.data.PhotoStorage
 import it.vigilfuoco.tlcfield.data.RssiMeasurement
 import it.vigilfuoco.tlcfield.data.SiteRepository
+import it.vigilfuoco.tlcfield.data.Vehicle
 import it.vigilfuoco.tlcfield.data.VehicleRepository
 import java.io.File
 
@@ -68,10 +69,17 @@ import java.io.File
 fun NewInterventionScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
-    initialSiteId: String? = null
+    initialSiteId: String? = null,
+    editInterventionId: String? = null
 ) {
 
     val context = LocalContext.current
+
+    val editingIntervention = remember(editInterventionId) {
+        editInterventionId?.let {
+            InterventionRepository.getById(context, it)
+        }
+    }
 
     val sites = SiteRepository.sites
 
@@ -79,32 +87,67 @@ fun NewInterventionScreen(
     // ANAGRAFICHE PERSONALE E AUTOMEZZI
     // =========================================================
 
-    val personnel = PersonnelRepository.getAll()
-    val vehicles = VehicleRepository.getAll()
-
-    val selectedPersonnelIds =
-        remember { mutableStateListOf<Int>() }
-
-    val selectedVehicleIds =
-        remember { mutableStateListOf<Int>() }
-
-    var personnelMenuOpen by remember {
-        mutableStateOf(false)
+    val personnel = remember(editingIntervention) {
+        val current = PersonnelRepository.getAll()
+        val historical = editingIntervention
+            ?.personnel
+            .orEmpty()
+            .map { person ->
+                Personnel(
+                    id = person.id,
+                    qualification = person.qualification,
+                    fullName = person.fullName,
+                    active = true
+                )
+            }
+        (current + historical)
+            .distinctBy { it.id }
+            .sortedBy { it.fullName }
     }
 
-    var vehicleMenuOpen by remember {
-        mutableStateOf(false)
+    val vehicles = remember(editingIntervention) {
+        val current = VehicleRepository.getAll()
+        val historical = editingIntervention
+            ?.vehicles
+            .orEmpty()
+            .map { vehicle ->
+                Vehicle(
+                    id = vehicle.id,
+                    description = vehicle.description,
+                    plate = vehicle.plate,
+                    active = true
+                )
+            }
+        (current + historical)
+            .distinctBy { it.id }
+            .sortedWith(compareBy({ it.description }, { it.plate }))
     }
+
+    val selectedPersonnelIds = remember(editingIntervention) {
+        mutableStateListOf<Int>().apply {
+            addAll(editingIntervention?.personnel?.map { it.id }.orEmpty())
+        }
+    }
+
+    val selectedVehicleIds = remember(editingIntervention) {
+        mutableStateListOf<Int>().apply {
+            addAll(editingIntervention?.vehicles?.map { it.id }.orEmpty())
+        }
+    }
+
+    var personnelMenuOpen by remember { mutableStateOf(false) }
+    var vehicleMenuOpen by remember { mutableStateOf(false) }
 
     // =========================================================
     // DATI INTERVENTO
     // =========================================================
 
-    var selectedSite by remember(initialSiteId) {
+    var selectedSite by remember(initialSiteId, editingIntervention) {
         mutableStateOf(
-            initialSiteId?.let {
-                SiteRepository.getSite(it)
-            }
+            editingIntervention
+                ?.siteId
+                ?.let { SiteRepository.getSite(it) }
+                ?: initialSiteId?.let { SiteRepository.getSite(it) }
         )
     }
 
@@ -113,7 +156,7 @@ fun NewInterventionScreen(
     }
 
     var type by remember {
-        mutableStateOf("Guasto")
+        mutableStateOf(editingIntervention?.type ?: "Guasto")
     }
 
     var typeMenuOpen by remember {
@@ -121,11 +164,11 @@ fun NewInterventionScreen(
     }
 
     var reportedProblem by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.reportedProblem ?: "")
     }
 
     var initialState by remember {
-        mutableStateOf("Fuori servizio")
+        mutableStateOf(editingIntervention?.initialState ?: "Fuori servizio")
     }
 
     var initialMenuOpen by remember {
@@ -133,27 +176,27 @@ fun NewInterventionScreen(
     }
 
     var powerOk by remember {
-        mutableStateOf(true)
+        mutableStateOf(editingIntervention?.powerOk ?: true)
     }
 
     var radioOn by remember {
-        mutableStateOf(true)
+        mutableStateOf(editingIntervention?.radioOn ?: true)
     }
 
     var alarms by remember {
-        mutableStateOf(false)
+        mutableStateOf(editingIntervention?.alarms ?: false)
     }
 
     var ipLinkOk by remember {
-        mutableStateOf(true)
+        mutableStateOf(editingIntervention?.ipLinkOk ?: true)
     }
 
     var notes by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.notes ?: "")
     }
 
     var result by remember {
-        mutableStateOf("Impianto ripristinato")
+        mutableStateOf(editingIntervention?.result ?: "Impianto ripristinato")
     }
 
     var resultMenuOpen by remember {
@@ -161,13 +204,22 @@ fun NewInterventionScreen(
     }
 
     val measuredRssi =
-        remember {
-            mutableStateMapOf<String, String>()
+        remember(editingIntervention, selectedSite) {
+            mutableStateMapOf<String, String>().apply {
+                editingIntervention?.measurements?.forEach { measurement ->
+                    val link = selectedSite?.links?.firstOrNull { it.name == measurement.linkName }
+                    if (link != null && measurement.measuredRssi != null) {
+                        this["${link.name}|${link.type}"] = measurement.measuredRssi.toString()
+                    }
+                }
+            }
         }
 
     val photos =
-        remember {
-            mutableStateListOf<InterventionPhoto>()
+        remember(editingIntervention) {
+            mutableStateListOf<InterventionPhoto>().apply {
+                addAll(editingIntervention?.photos.orEmpty())
+            }
         }
 
     var photoCategory by remember {
@@ -197,13 +249,19 @@ fun NewInterventionScreen(
     // =========================================================
 
     val selectedKairosAlarms =
-        remember {
-            mutableStateListOf<Int>()
+        remember(editingIntervention) {
+            mutableStateListOf<Int>().apply {
+                addAll(editingIntervention?.kairosAlarmNumbers.orEmpty())
+            }
         }
 
     val completedKairosChecks =
-        remember {
-            mutableStateMapOf<String, Boolean>()
+        remember(editingIntervention) {
+            mutableStateMapOf<String, Boolean>().apply {
+                editingIntervention?.kairosCompletedChecks.orEmpty().forEach { key ->
+                    this[key] = true
+                }
+            }
         }
 
     var kairosAlarmMenuOpen by remember {
@@ -217,35 +275,35 @@ fun NewInterventionScreen(
     }
 
     var kairosDiagnosticNotes by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosDiagnosticNotes ?: "")
     }
 
     var kairosSupplyVoltage by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.supplyVoltageV?.toString() ?: "")
     }
 
     var kairosTxTemperature by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.txTemperatureC?.toString() ?: "")
     }
 
     var kairosForwardPower by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.forwardPowerW?.toString() ?: "")
     }
 
     var kairosReflectedPower by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.reflectedPowerW?.toString() ?: "")
     }
 
     var kairosRssiMain by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.rssiMainDbm?.toString() ?: "")
     }
 
     var kairosRssiDiversity by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.rssiDiversityDbm?.toString() ?: "")
     }
 
     var kairosSyncSource by remember {
-        mutableStateOf("")
+        mutableStateOf(editingIntervention?.kairosSnapshot?.synchronizationSource ?: "")
     }
 
     // =========================================================
@@ -303,10 +361,11 @@ fun NewInterventionScreen(
             }
 
         return Intervention(
-            id = InterventionRepository.newId(),
+            id = editingIntervention?.id ?: InterventionRepository.newId(),
             siteId = site.id,
             siteName = site.name,
-            timestamp = System.currentTimeMillis(),
+            timestamp = editingIntervention?.timestamp ?: System.currentTimeMillis(),
+            lastModified = System.currentTimeMillis(),
             type = type,
             reportedProblem =
                 reportedProblem.trim(),
@@ -404,7 +463,7 @@ fun NewInterventionScreen(
             TopAppBar(
 
                 title = {
-                    Text("Nuovo intervento")
+                    Text(if (editingIntervention == null) "Nuovo intervento" else "Modifica intervento")
                 },
 
                 navigationIcon = {
@@ -1667,9 +1726,10 @@ fun NewInterventionScreen(
                                 photo.path
                             ) {
 
-                                BitmapFactory
-                                    .decodeFile(
-                                        photo.path
+                                PhotoStorage
+                                    .decodeOrientedBitmap(
+                                        photo.path,
+                                        1200
                                     )
                                     ?.asImageBitmap()
                             }
@@ -1849,7 +1909,7 @@ fun NewInterventionScreen(
                     )
 
                     Text(
-                        "SALVA INTERVENTO",
+                        if (editingIntervention == null) "SALVA INTERVENTO" else "SALVA MODIFICHE",
                         modifier =
                             Modifier
                                 .padding(
@@ -1889,15 +1949,18 @@ fun NewInterventionScreen(
 
             title = {
                 Text(
-                    "Intervento salvato"
+                    if (editingIntervention == null) "Intervento salvato" else "Intervento aggiornato"
                 )
             },
 
             text = {
 
                 Text(
-                    "L'intervento è nello storico. " +
-                        "È possibile generare subito il rapporto PDF completo di misure e fotografie."
+                    if (editingIntervention == null) {
+                        "L'intervento è nello storico. È possibile generare subito il rapporto PDF completo di misure e fotografie."
+                    } else {
+                        "Le modifiche sono state salvate sullo stesso rapporto. È possibile generare subito il PDF aggiornato."
+                    }
                 )
             },
 

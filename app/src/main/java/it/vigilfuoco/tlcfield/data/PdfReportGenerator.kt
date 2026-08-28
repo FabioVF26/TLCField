@@ -667,6 +667,13 @@ object PdfReportGenerator {
             )
         )
 
+        if (intervention.lastModified > intervention.timestamp) {
+            infoRow(
+                "Ultima modifica",
+                dateFormat.format(Date(intervention.lastModified))
+            )
+        }
+
         infoRow(
             "Tipologia",
             intervention.type
@@ -1191,7 +1198,7 @@ object PdfReportGenerator {
                     if (file.exists()) {
 
                         val bitmap =
-                            decodeSampledBitmap(
+                            PhotoStorage.decodeOrientedBitmap(
                                 file.absolutePath,
                                 1200
                             )

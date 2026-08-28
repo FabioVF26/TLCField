@@ -187,6 +187,28 @@ class MainActivity : ComponentActivity() {
                         HistoryScreen(
                             onBack = {
                                 navController.popBackStack()
+                            },
+                            onEdit = { interventionId ->
+                                navController.navigate(
+                                    "edit_intervention/$interventionId"
+                                )
+                            }
+                        )
+                    }
+
+                    composable(
+                        "edit_intervention/{interventionId}"
+                    ) { entry ->
+
+                        NewInterventionScreen(
+                            editInterventionId =
+                                entry.arguments
+                                    ?.getString("interventionId"),
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onSaved = {
+                                navController.popBackStack()
                             }
                         )
                     }

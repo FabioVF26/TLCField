@@ -27,7 +27,7 @@ class InterventionRow(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 Base.metadata.create_all(engine)
-app = FastAPI(title="TLC Field API", version="1.2.0")
+app = FastAPI(title="TLC Field API", version="1.4.0")
 
 class InterventionPayload(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -53,7 +53,7 @@ def db_session():
 
 @app.get("/api/v1/health")
 def health(_: None = Depends(auth)):
-    return {"ok": True, "service": "tlc-field-api", "version": "1.2.0"}
+    return {"ok": True, "service": "tlc-field-api", "version": "1.4.0"}
 
 @app.post("/api/v1/interventions")
 def upsert_intervention(payload: InterventionPayload, _: None = Depends(auth), db: Session = Depends(db_session)):
@@ -82,3 +82,18 @@ def upsert_intervention(payload: InterventionPayload, _: None = Depends(auth), d
 def list_interventions(_: None = Depends(auth), db: Session = Depends(db_session)):
     rows = db.query(InterventionRow).order_by(InterventionRow.timestamp_ms.desc()).all()
     return [json.loads(r.payload_json) for r in rows]
+
+
+@app.delete("/api/v1/interventions/{intervention_id}")
+def delete_intervention(
+    intervention_id: str,
+    _: None = Depends(auth),
+    db: Session = Depends(db_session),
+):
+    row = db.get(InterventionRow, intervention_id)
+    if row is None:
+        return {"ok": True, "id": intervention_id, "deleted": False}
+
+    db.delete(row)
+    db.commit()
+    return {"ok": True, "id": intervention_id, "deleted": True}

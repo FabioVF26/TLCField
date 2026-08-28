@@ -18,19 +18,34 @@ object InterventionRepository {
         context: Context,
         intervention: Intervention
     ) {
-        val items =
-            getAll(context)
-                .toMutableList()
+        val items = getAll(context)
+            .filterNot { it.id == intervention.id }
+            .toMutableList()
 
-        items.add(
-            0,
-            intervention
-        )
+        items.add(intervention)
 
         persist(
             context,
-            items
+            items.sortedByDescending { it.timestamp }
         )
+    }
+
+    fun getById(
+        context: Context,
+        interventionId: String
+    ): Intervention? =
+        getAll(context).firstOrNull { it.id == interventionId }
+
+    fun delete(
+        context: Context,
+        interventionId: String
+    ): Boolean {
+        val existing = getById(context, interventionId) ?: return false
+        val remaining = getAll(context).filterNot { it.id == interventionId }
+        persist(context, remaining)
+        PendingDeletionRepository.mark(context, interventionId)
+        AdminAccessRepository.recordDeletion(context, existing)
+        return true
     }
 
     fun getAll(
@@ -94,36 +109,22 @@ object InterventionRepository {
         context: Context,
         remote: List<Intervention>
     ) {
+        val deletedIds = PendingDeletionRepository.getAll(context)
+        val merged = LinkedHashMap<String, Intervention>()
 
-        val merged =
-            LinkedHashMap<
-                String,
-                Intervention
-            >()
-
-        (
-            getAll(context) +
-                remote
-        )
-            .sortedByDescending {
-                it.timestamp
+        (getAll(context) + remote)
+            .filterNot { it.id in deletedIds }
+            .groupBy { it.id }
+            .values
+            .mapNotNull { versions ->
+                versions.maxByOrNull { it.lastModified }
             }
+            .sortedByDescending { it.timestamp }
             .forEach { item ->
-
-                if (
-                    !merged.containsKey(
-                        item.id
-                    )
-                ) {
-                    merged[item.id] =
-                        item
-                }
+                merged[item.id] = item
             }
 
-        persist(
-            context,
-            merged.values.toList()
-        )
+        persist(context, merged.values.toList())
     }
 
     private fun persist(
@@ -179,6 +180,11 @@ object InterventionRepository {
         put(
             "timestamp",
             i.timestamp
+        )
+
+        put(
+            "lastModified",
+            i.lastModified
         )
 
         put(
@@ -848,6 +854,13 @@ object InterventionRepository {
                 o.optLong(
                     "timestamp"
                 ),
+
+            lastModified =
+                if (o.has("lastModified")) {
+                    o.optLong("lastModified")
+                } else {
+                    o.optLong("timestamp")
+                },
 
             type =
                 o.optString(

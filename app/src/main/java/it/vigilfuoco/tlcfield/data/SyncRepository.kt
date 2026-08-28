@@ -53,6 +53,31 @@ object SyncRepository {
 
         var uploaded = 0
         var failed = 0
+        var deletionFailed = 0
+
+        // =====================================================
+        // ELIMINAZIONI PENDENTI (ADMIN)
+        // =====================================================
+
+        PendingDeletionRepository
+            .getAll(context)
+            .forEach { interventionId ->
+
+                val deleteResult =
+                    ServerApi.deleteIntervention(
+                        settings,
+                        interventionId
+                    )
+
+                if (deleteResult.ok) {
+                    PendingDeletionRepository.remove(
+                        context,
+                        interventionId
+                    )
+                } else {
+                    deletionFailed++
+                }
+            }
 
         InterventionRepository
             .getAll(context)
@@ -194,6 +219,7 @@ object SyncRepository {
 
         val ok =
             failed == 0 &&
+            deletionFailed == 0 &&
             interventionsOk &&
             sitesOk &&
             personnelOk &&
@@ -213,6 +239,9 @@ object SyncRepository {
 
             !interventionsOk ->
                 "Sincronizzazione parziale: interventi non aggiornati"
+
+            deletionFailed > 0 ->
+                "Sincronizzazione parziale: $deletionFailed eliminazioni admin da sincronizzare"
 
             failed > 0 ->
                 "Sincronizzazione parziale: $failed invii non riusciti"

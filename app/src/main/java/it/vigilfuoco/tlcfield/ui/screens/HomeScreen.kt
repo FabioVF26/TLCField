@@ -130,7 +130,7 @@ fun HomeScreen(
             )
 
             Text(
-                text = "Versione 1.3.1 — selezione compatta di personale e mezzi, PDF ottimizzato, sincronizzazione server, storico per sito, strumenti RF e diagnostica KAIROS.",
+                text = "Versione 1.4 — modifica rapporti, cancellazione protetta da amministratore, foto orientate automaticamente, sincronizzazione server e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )
