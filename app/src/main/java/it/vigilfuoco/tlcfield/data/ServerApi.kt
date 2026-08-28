@@ -284,7 +284,161 @@ object ServerApi {
         ) to emptyList()
     }
 
+// ========================================================
+// PERSONALE - DOWNLOAD
+// ========================================================
 
+fun downloadPersonnel(
+    settings: ServerSettingsRepository.Settings
+): Pair<Result, List<Personnel>> = runCatching {
+
+    val c = connection(
+        settings,
+        "/api/v1/personnel",
+        "GET"
+    )
+
+    val code = c.responseCode
+
+    val body = (
+        if (code in 200..299) {
+            c.inputStream
+        } else {
+            c.errorStream
+        }
+    )?.bufferedReader()?.use {
+        it.readText()
+    }.orEmpty()
+
+    if (code !in 200..299) {
+        return@runCatching Result(
+            false,
+            "HTTP $code",
+            body
+        ) to emptyList()
+    }
+
+    val array = JSONArray(body)
+
+    val personnel = buildList {
+
+        for (i in 0 until array.length()) {
+
+            val item = array.getJSONObject(i)
+
+            add(
+                Personnel(
+                    id = item.getInt("id"),
+                    qualification = item.optString(
+                        "qualification",
+                        ""
+                    ),
+                    fullName = item.optString(
+                        "fullName",
+                        ""
+                    ),
+                    active = item.optBoolean(
+                        "active",
+                        true
+                    )
+                )
+            )
+        }
+    }
+
+    Result(
+        true,
+        "${personnel.size} operatori ricevuti",
+        body
+    ) to personnel
+
+}.getOrElse {
+
+    Result(
+        false,
+        it.message
+            ?: "Errore durante il download del personale"
+    ) to emptyList()
+}
+
+
+// ========================================================
+// AUTOMEZZI - DOWNLOAD
+// ========================================================
+
+fun downloadVehicles(
+    settings: ServerSettingsRepository.Settings
+): Pair<Result, List<Vehicle>> = runCatching {
+
+    val c = connection(
+        settings,
+        "/api/v1/vehicles",
+        "GET"
+    )
+
+    val code = c.responseCode
+
+    val body = (
+        if (code in 200..299) {
+            c.inputStream
+        } else {
+            c.errorStream
+        }
+    )?.bufferedReader()?.use {
+        it.readText()
+    }.orEmpty()
+
+    if (code !in 200..299) {
+        return@runCatching Result(
+            false,
+            "HTTP $code",
+            body
+        ) to emptyList()
+    }
+
+    val array = JSONArray(body)
+
+    val vehicles = buildList {
+
+        for (i in 0 until array.length()) {
+
+            val item = array.getJSONObject(i)
+
+            add(
+                Vehicle(
+                    id = item.getInt("id"),
+                    description = item.optString(
+                        "description",
+                        ""
+                    ),
+                    plate = item.optString(
+                        "plate",
+                        ""
+                    ),
+                    active = item.optBoolean(
+                        "active",
+                        true
+                    )
+                )
+            )
+        }
+    }
+
+    Result(
+        true,
+        "${vehicles.size} automezzi ricevuti",
+        body
+    ) to vehicles
+
+}.getOrElse {
+
+    Result(
+        false,
+        it.message
+            ?: "Errore durante il download degli automezzi"
+    ) to emptyList()
+}
+ 
     // ========================================================
     // CONVERSIONE JSON -> SITE
     // ========================================================
