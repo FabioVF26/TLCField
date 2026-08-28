@@ -37,7 +37,16 @@ data class RssiMeasurement(
     val referenceRssi: Int?,
     val measuredRssi: Int?
 ) {
-    val deltaDb: Int? get() = if (referenceRssi != null && measuredRssi != null) measuredRssi - referenceRssi else null
+    val deltaDb: Int?
+        get() =
+            if (
+                referenceRssi != null &&
+                measuredRssi != null
+            ) {
+                measuredRssi - referenceRssi
+            } else {
+                null
+            }
 }
 
 data class InterventionPhoto(
@@ -53,6 +62,26 @@ data class KairosSnapshot(
     val rssiMainDbm: Int? = null,
     val rssiDiversityDbm: Int? = null,
     val synchronizationSource: String = ""
+)
+
+// =========================================================
+// PERSONALE ASSOCIATO ALL'INTERVENTO
+// =========================================================
+
+data class InterventionPersonnel(
+    val id: Int,
+    val qualification: String,
+    val fullName: String
+)
+
+// =========================================================
+// AUTOMEZZI ASSOCIATI ALL'INTERVENTO
+// =========================================================
+
+data class InterventionVehicle(
+    val id: Int,
+    val description: String,
+    val plate: String
 )
 
 data class Intervention(
@@ -71,13 +100,24 @@ data class Intervention(
     val result: String,
     val measurements: List<RssiMeasurement>,
     val photos: List<InterventionPhoto> = emptyList(),
+
+    // Personale intervenuto
+    val personnel: List<InterventionPersonnel> = emptyList(),
+
+    // Automezzi utilizzati
+    val vehicles: List<InterventionVehicle> = emptyList(),
+
+    // Dati KAIROS
     val kairosAlarmNumbers: List<Int> = emptyList(),
     val kairosCompletedChecks: List<String> = emptyList(),
     val kairosDiagnosticNotes: String = "",
     val kairosSnapshot: KairosSnapshot? = null
 )
 
-enum class AlarmSeverity(val level: Int, val label: String) {
+enum class AlarmSeverity(
+    val level: Int,
+    val label: String
+) {
     NOTICE(0, "NOTICE"),
     WARNING(1, "WARNING"),
     MINOR(2, "MINOR"),
