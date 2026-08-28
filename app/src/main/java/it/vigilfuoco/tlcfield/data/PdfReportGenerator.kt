@@ -153,17 +153,19 @@ object PdfReportGenerator {
 
         val logoVvf =
             runCatching {
-                BitmapFactory.decodeResource(
-                    context.resources,
-                    R.drawable.logo_vvf
+                loadScaledResourceBitmap(
+                    context,
+                    R.drawable.logo_vvf,
+                    420
                 )
             }.getOrNull()
 
         val logoTlc =
             runCatching {
-                BitmapFactory.decodeResource(
-                    context.resources,
-                    R.drawable.logo_tlc
+                loadScaledResourceBitmap(
+                    context,
+                    R.drawable.logo_tlc,
+                    420
                 )
             }.getOrNull()
 
@@ -1189,8 +1191,9 @@ object PdfReportGenerator {
                     if (file.exists()) {
 
                         val bitmap =
-                            BitmapFactory.decodeFile(
-                                file.absolutePath
+                            decodeSampledBitmap(
+                                file.absolutePath,
+                                1200
                             )
 
                         if (bitmap != null) {
@@ -1320,15 +1323,100 @@ object PdfReportGenerator {
                 "TLCField_${safeSite}_$stamp.pdf"
             )
 
-        FileOutputStream(
-            output
-        ).use {
-            pdf.writeTo(it)
+        val tempOutput =
+            File(
+                reportDir,
+                ".TLCField_${safeSite}_$stamp.tmp"
+            )
+
+        try {
+            FileOutputStream(tempOutput).use { stream ->
+                pdf.writeTo(stream)
+                stream.flush()
+            }
+        } finally {
+            pdf.close()
         }
 
-        pdf.close()
+        if (output.exists()) {
+            output.delete()
+        }
+
+        if (!tempOutput.renameTo(output)) {
+            tempOutput.copyTo(output, overwrite = true)
+            tempOutput.delete()
+        }
 
         return output
+    }
+
+    private fun loadScaledResourceBitmap(
+        context: Context,
+        resourceId: Int,
+        maxDimension: Int
+    ): Bitmap {
+        val original = BitmapFactory.decodeResource(
+            context.resources,
+            resourceId
+        ) ?: error("Risorsa grafica non disponibile")
+
+        return scaleBitmap(original, maxDimension)
+    }
+
+    private fun decodeSampledBitmap(
+        path: String,
+        maxDimension: Int
+    ): Bitmap? {
+        val bounds = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(path, bounds)
+
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return null
+        }
+
+        var sampleSize = 1
+        while (
+            bounds.outWidth / sampleSize > maxDimension * 2 ||
+            bounds.outHeight / sampleSize > maxDimension * 2
+        ) {
+            sampleSize *= 2
+        }
+
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sampleSize
+            inPreferredConfig = Bitmap.Config.RGB_565
+        }
+
+        val decoded = BitmapFactory.decodeFile(path, options) ?: return null
+        return scaleBitmap(decoded, maxDimension)
+    }
+
+    private fun scaleBitmap(
+        source: Bitmap,
+        maxDimension: Int
+    ): Bitmap {
+        val largest = maxOf(source.width, source.height)
+        if (largest <= maxDimension) {
+            return source
+        }
+
+        val ratio = maxDimension.toFloat() / largest.toFloat()
+        val targetWidth = maxOf(1, (source.width * ratio).toInt())
+        val targetHeight = maxOf(1, (source.height * ratio).toInt())
+        val scaled = Bitmap.createScaledBitmap(
+            source,
+            targetWidth,
+            targetHeight,
+            true
+        )
+
+        if (scaled !== source) {
+            source.recycle()
+        }
+
+        return scaled
     }
 
     fun share(

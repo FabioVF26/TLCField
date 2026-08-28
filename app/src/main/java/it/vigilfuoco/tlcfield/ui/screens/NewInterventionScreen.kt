@@ -88,6 +88,14 @@ fun NewInterventionScreen(
     val selectedVehicleIds =
         remember { mutableStateListOf<Int>() }
 
+    var personnelMenuOpen by remember {
+        mutableStateOf(false)
+    }
+
+    var vehicleMenuOpen by remember {
+        mutableStateOf(false)
+    }
+
     // =========================================================
     // DATI INTERVENTO
     // =========================================================
@@ -632,103 +640,90 @@ fun NewInterventionScreen(
             // =================================================
 
             item {
-
-                SectionTitle(
-                    "Personale intervenuto"
-                )
+                SectionTitle("Personale intervenuto")
             }
 
             item {
+                if (personnel.isEmpty()) {
+                    Text(
+                        text = "Nessun nominativo disponibile. Eseguire la sincronizzazione con il server.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    ExposedDropdownMenuBox(
+                        expanded = personnelMenuOpen,
+                        onExpandedChange = { personnelMenuOpen = !personnelMenuOpen }
+                    ) {
+                        val selectedPeople = personnel.filter { it.id in selectedPersonnelIds }
+                        val summary = when (selectedPeople.size) {
+                            0 -> "Nessuno selezionato"
+                            1 -> selectedPeople.first().fullName
+                            else -> "${selectedPeople.size} operatori selezionati"
+                        }
 
-                Text(
-                    text =
-                        if (personnel.isEmpty()) {
-                            "Nessun nominativo disponibile. Eseguire la sincronizzazione con il server."
-                        } else {
-                            "Selezionare il personale presente sull'intervento."
-                        },
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
-                )
-            }
-
-            if (personnel.isNotEmpty()) {
-
-                items(
-                    personnel,
-                    key = {
-                        "personnel_${it.id}"
-                    }
-                ) { person ->
-
-                    val selected =
-                        person.id in
-                            selectedPersonnelIds
-
-                    CheckRow(
-
-                        label =
-                            buildString {
-
-                                if (
-                                    person.qualification
-                                        .isNotBlank()
-                                ) {
-                                    append(
-                                        person.qualification
-                                    )
-                                    append(" — ")
-                                }
-
-                                append(
-                                    person.fullName
-                                )
+                        OutlinedTextField(
+                            value = summary,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Seleziona personale") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(personnelMenuOpen)
                             },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
 
-                        checked =
-                            selected,
-
-                        onChecked = {
-                            checked ->
-
-                            if (checked) {
-
-                                if (
-                                    person.id !in
-                                    selectedPersonnelIds
-                                ) {
-                                    selectedPersonnelIds
-                                        .add(
-                                            person.id
-                                        )
-                                }
-
-                            } else {
-
-                                selectedPersonnelIds
-                                    .remove(
-                                        person.id
-                                    )
+                        ExposedDropdownMenu(
+                            expanded = personnelMenuOpen,
+                            onDismissRequest = { personnelMenuOpen = false }
+                        ) {
+                            personnel.forEach { person ->
+                                val checked = person.id in selectedPersonnelIds
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = buildString {
+                                                    if (person.qualification.isNotBlank()) {
+                                                        append(person.qualification)
+                                                        append(" — ")
+                                                    }
+                                                    append(person.fullName)
+                                                },
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Checkbox(
+                                                checked = checked,
+                                                onCheckedChange = null
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        if (checked) {
+                                            selectedPersonnelIds.remove(person.id)
+                                        } else {
+                                            selectedPersonnelIds.add(person.id)
+                                        }
+                                    }
+                                )
                             }
                         }
-                    )
+                    }
                 }
+            }
 
+            if (selectedPersonnelIds.isNotEmpty()) {
                 item {
-
                     Text(
-                        text =
-                            "Personale selezionato: " +
-                                selectedPersonnelIds
-                                    .size,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .primary
+                        text = personnel
+                            .filter { it.id in selectedPersonnelIds }
+                            .joinToString(" • ") { it.fullName },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -738,88 +733,84 @@ fun NewInterventionScreen(
             // =================================================
 
             item {
-
-                SectionTitle(
-                    "Mezzi utilizzati"
-                )
+                SectionTitle("Mezzi utilizzati")
             }
 
             item {
+                if (vehicles.isEmpty()) {
+                    Text(
+                        text = "Nessun automezzo disponibile. Eseguire la sincronizzazione con il server.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                } else {
+                    ExposedDropdownMenuBox(
+                        expanded = vehicleMenuOpen,
+                        onExpandedChange = { vehicleMenuOpen = !vehicleMenuOpen }
+                    ) {
+                        val selectedVehicles = vehicles.filter { it.id in selectedVehicleIds }
+                        val summary = when (selectedVehicles.size) {
+                            0 -> "Nessun mezzo selezionato"
+                            1 -> "${selectedVehicles.first().description} — ${selectedVehicles.first().plate}"
+                            else -> "${selectedVehicles.size} mezzi selezionati"
+                        }
 
-                Text(
-                    text =
-                        if (vehicles.isEmpty()) {
-                            "Nessun automezzo disponibile. Eseguire la sincronizzazione con il server."
-                        } else {
-                            "Selezionare uno o più mezzi utilizzati per l'intervento."
-                        },
-                    style =
-                        MaterialTheme
-                            .typography
-                            .bodySmall
-                )
-            }
+                        OutlinedTextField(
+                            value = summary,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Seleziona mezzi") },
+                            trailingIcon = {
+                                ExposedDropdownMenuDefaults.TrailingIcon(vehicleMenuOpen)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
 
-            if (vehicles.isNotEmpty()) {
-
-                items(
-                    vehicles,
-                    key = {
-                        "vehicle_${it.id}"
-                    }
-                ) { vehicle ->
-
-                    val selected =
-                        vehicle.id in
-                            selectedVehicleIds
-
-                    CheckRow(
-
-                        label =
-                            "${vehicle.description} — ${vehicle.plate}",
-
-                        checked =
-                            selected,
-
-                        onChecked = {
-                            checked ->
-
-                            if (checked) {
-
-                                if (
-                                    vehicle.id !in
-                                    selectedVehicleIds
-                                ) {
-                                    selectedVehicleIds
-                                        .add(
-                                            vehicle.id
-                                        )
-                                }
-
-                            } else {
-
-                                selectedVehicleIds
-                                    .remove(
-                                        vehicle.id
-                                    )
+                        ExposedDropdownMenu(
+                            expanded = vehicleMenuOpen,
+                            onDismissRequest = { vehicleMenuOpen = false }
+                        ) {
+                            vehicles.forEach { vehicle ->
+                                val checked = vehicle.id in selectedVehicleIds
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "${vehicle.description} — ${vehicle.plate}",
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Checkbox(
+                                                checked = checked,
+                                                onCheckedChange = null
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        if (checked) {
+                                            selectedVehicleIds.remove(vehicle.id)
+                                        } else {
+                                            selectedVehicleIds.add(vehicle.id)
+                                        }
+                                    }
+                                )
                             }
                         }
-                    )
+                    }
                 }
+            }
 
+            if (selectedVehicleIds.isNotEmpty()) {
                 item {
-
                     Text(
-                        text =
-                            "Mezzi selezionati: " +
-                                selectedVehicleIds
-                                    .size,
-                        fontWeight =
-                            FontWeight.Bold,
-                        color =
-                            MaterialTheme
-                                .colorScheme
-                                .primary
+                        text = vehicles
+                            .filter { it.id in selectedVehicleIds }
+                            .joinToString(" • ") { "${it.description} (${it.plate})" },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
