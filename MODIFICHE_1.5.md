@@ -18,3 +18,9 @@ Sono stati aggiunti:
 ## Versione
 - `versionCode = 15`
 - `versionName = 1.5.0`
+
+
+## Correzione 1.5.1
+- Abilitata la generazione di `BuildConfig` in `app/build.gradle.kts`.
+- Corretto il build GitHub Actions che falliva in `BugReportScreen.kt` sui riferimenti `BuildConfig.VERSION_NAME`.
+- Versione aggiornata a 1.5.1 (versionCode 16).
