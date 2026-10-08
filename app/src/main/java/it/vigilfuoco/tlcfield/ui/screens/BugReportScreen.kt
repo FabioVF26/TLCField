@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import it.vigilfuoco.tlcfield.data.BugReport
 import it.vigilfuoco.tlcfield.data.BugReportRepository
 import it.vigilfuoco.tlcfield.data.Personnel
 import it.vigilfuoco.tlcfield.data.PersonnelRepository
+import it.vigilfuoco.tlcfield.data.PersonnelVehicleCacheRepository
 import it.vigilfuoco.tlcfield.data.ServerApi
 import it.vigilfuoco.tlcfield.data.ServerSettingsRepository
 import java.util.UUID
@@ -47,13 +49,87 @@ import kotlinx.coroutines.withContext
 fun BugReportScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val personnel = remember { PersonnelRepository.getAll() }
+
+    var personnel by remember {
+        mutableStateOf(PersonnelRepository.getAll())
+    }
+    var loadingPersonnel by remember { mutableStateOf(false) }
+    var personnelStatus by remember { mutableStateOf("") }
 
     var selectedPerson by remember { mutableStateOf<Personnel?>(null) }
     var expanded by remember { mutableStateOf(false) }
     var notes by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+
+    fun refreshPersonnel() {
+        if (loadingPersonnel) return
+
+        loadingPersonnel = true
+        personnelStatus = "Caricamento elenco personale..."
+
+        scope.launch {
+            // 1) Memoria applicativa
+            var loaded = PersonnelRepository.getAll()
+
+            // 2) Cache persistente locale
+            if (loaded.isEmpty()) {
+                val cached = withContext(Dispatchers.IO) {
+                    PersonnelVehicleCacheRepository.loadPersonnel(context)
+                }
+                if (cached.isNotEmpty()) {
+                    PersonnelRepository.updateFromServer(cached)
+                    loaded = PersonnelRepository.getAll()
+                }
+            }
+
+            // 3) Server, se necessario e configurato
+            if (loaded.isEmpty()) {
+                val settings = ServerSettingsRepository.load(context)
+
+                if (settings.baseUrl.isNotBlank()) {
+                    val (result, remotePersonnel) = withContext(Dispatchers.IO) {
+                        ServerApi.downloadPersonnel(settings)
+                    }
+
+                    if (result.ok && remotePersonnel.isNotEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            PersonnelVehicleCacheRepository.savePersonnel(
+                                context,
+                                remotePersonnel
+                            )
+                        }
+                        PersonnelRepository.updateFromServer(remotePersonnel)
+                        loaded = PersonnelRepository.getAll()
+                        personnelStatus = ""
+                    } else {
+                        personnelStatus = if (!result.ok) {
+                            "Impossibile scaricare il personale dal server: ${result.message}."
+                        } else {
+                            "Il server ha restituito un elenco personale vuoto."
+                        }
+                    }
+                } else {
+                    personnelStatus = "Server non configurato. Eseguire la configurazione/sincronizzazione."
+                }
+            } else {
+                personnelStatus = ""
+            }
+
+            personnel = loaded
+
+            // Se il nominativo selezionato non è più nell'elenco, azzeralo.
+            if (selectedPerson != null && personnel.none { it.id == selectedPerson?.id }) {
+                selectedPerson = null
+            }
+
+            loadingPersonnel = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshPersonnel()
+    }
 
     Scaffold(
         topBar = {
@@ -82,9 +158,25 @@ fun BugReportScreen(onBack: () -> Unit) {
 
             if (personnel.isEmpty()) {
                 Text(
-                    "Elenco personale non disponibile. Eseguire prima una sincronizzazione con il server.",
-                    color = MaterialTheme.colorScheme.error
+                    when {
+                        loadingPersonnel -> "Caricamento elenco personale..."
+                        personnelStatus.isNotBlank() -> personnelStatus
+                        else -> "Elenco personale non disponibile."
+                    },
+                    color = if (loadingPersonnel) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
                 )
+
+                Button(
+                    onClick = { refreshPersonnel() },
+                    enabled = !loadingPersonnel,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (loadingPersonnel) "CARICAMENTO..." else "RICARICA ELENCO PERSONALE")
+                }
             } else {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
@@ -156,6 +248,7 @@ fun BugReportScreen(onBack: () -> Unit) {
                         synced = false
                     )
 
+                    // Il salvataggio locale avviene sempre prima del tentativo di invio.
                     BugReportRepository.save(context, report)
                     busy = true
                     status = "Segnalazione salvata sul dispositivo. Invio al server..."
@@ -184,6 +277,14 @@ fun BugReportScreen(onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(if (busy) "SALVATAGGIO..." else "SALVA SEGNALAZIONE")
+            }
+
+            if (selectedPerson == null && notes.isNotBlank() && !loadingPersonnel) {
+                Text(
+                    "Per salvare la segnalazione è necessario selezionare l'operatore.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             if (status.isNotBlank()) {
