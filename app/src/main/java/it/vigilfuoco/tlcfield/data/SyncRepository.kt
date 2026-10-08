@@ -11,6 +11,8 @@ object SyncRepository {
         val sitesDownloaded: Int,
         val personnelDownloaded: Int = 0,
         val vehiclesDownloaded: Int = 0,
+        val bugsUploaded: Int = 0,
+        val bugsFailed: Int = 0,
         val message: String
     )
 
@@ -27,6 +29,8 @@ object SyncRepository {
                 sitesDownloaded = 0,
                 personnelDownloaded = 0,
                 vehiclesDownloaded = 0,
+                bugsUploaded = 0,
+                bugsFailed = 0,
                 message =
                     "Configurare prima l'indirizzo del server"
             )
@@ -43,6 +47,8 @@ object SyncRepository {
                 sitesDownloaded = 0,
                 personnelDownloaded = 0,
                 vehiclesDownloaded = 0,
+                bugsUploaded = 0,
+                bugsFailed = 0,
                 message = health.message
             )
         }
@@ -93,6 +99,34 @@ object SyncRepository {
                     uploaded++
                 } else {
                     failed++
+                }
+            }
+
+        // =====================================================
+        // UPLOAD BUG PENDENTI
+        // =====================================================
+
+        var bugsUploaded = 0
+        var bugsFailed = 0
+
+        BugReportRepository
+            .getPending(context)
+            .forEach { report ->
+
+                val result =
+                    ServerApi.uploadBugReport(
+                        settings,
+                        report
+                    )
+
+                if (result.ok) {
+                    BugReportRepository.markSynced(
+                        context,
+                        report.id
+                    )
+                    bugsUploaded++
+                } else {
+                    bugsFailed++
                 }
             }
 
@@ -223,7 +257,8 @@ object SyncRepository {
             interventionsOk &&
             sitesOk &&
             personnelOk &&
-            vehiclesOk
+            vehiclesOk &&
+            bugsFailed == 0
 
 
         val message = when {
@@ -242,6 +277,9 @@ object SyncRepository {
 
             deletionFailed > 0 ->
                 "Sincronizzazione parziale: $deletionFailed eliminazioni admin da sincronizzare"
+
+            bugsFailed > 0 ->
+                "Sincronizzazione parziale: $bugsFailed segnalazioni BUG da inviare"
 
             failed > 0 ->
                 "Sincronizzazione parziale: $failed invii non riusciti"
@@ -283,6 +321,9 @@ object SyncRepository {
                 } else {
                     0
                 },
+
+            bugsUploaded = bugsUploaded,
+            bugsFailed = bugsFailed,
 
             message = message
         )

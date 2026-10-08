@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Description
@@ -41,6 +42,7 @@ fun HomeScreen(
     onDiagnosis: () -> Unit,
     onDocumentation: () -> Unit,
     onRfTools: () -> Unit,
+    onBugReport: () -> Unit,
     onServer: () -> Unit
 ) {
     Scaffold { padding ->
@@ -116,6 +118,13 @@ fun HomeScreen(
             )
 
             HomeButton(
+                label = "SEGNALA BUG (TEST)",
+                icon = Icons.Default.BugReport,
+                enabled = true,
+                onClick = onBugReport
+            )
+
+            HomeButton(
                 label = "STORICO INTERVENTI",
                 icon = Icons.Default.History,
                 enabled = true,
@@ -130,7 +139,7 @@ fun HomeScreen(
             )
 
             Text(
-                text = "Versione 1.4 — modifica rapporti, cancellazione protetta da amministratore, foto orientate automaticamente, sincronizzazione server e diagnostica KAIROS.",
+                text = "Versione 1.5 — segnalazione BUG sperimentale, modifica rapporti, cancellazione protetta da amministratore, sincronizzazione server e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )

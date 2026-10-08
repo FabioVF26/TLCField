@@ -491,6 +491,70 @@ fun downloadVehicles(
 }
  
     // ========================================================
+    // BUG REPORT - UPLOAD
+    // ========================================================
+
+    fun uploadBugReport(
+        settings: ServerSettingsRepository.Settings,
+        report: BugReport
+    ): Result = runCatching {
+
+        val c = connection(
+            settings,
+            "/api/v1/bugs",
+            "POST"
+        )
+
+        c.doOutput = true
+
+        val payload = JSONObject().apply {
+            put("id", report.id)
+            put("personnelId", report.personnelId)
+            put("qualification", report.qualification)
+            put("fullName", report.fullName)
+            put("notes", report.notes)
+            put("timestamp", report.timestamp)
+            put("appVersion", report.appVersion)
+        }
+
+        c.outputStream
+            .bufferedWriter(Charsets.UTF_8)
+            .use { writer ->
+                writer.write(payload.toString())
+            }
+
+        val code = c.responseCode
+
+        val body = (
+            if (code in 200..299) {
+                c.inputStream
+            } else {
+                c.errorStream
+            }
+        )?.bufferedReader()?.use {
+            it.readText()
+        }.orEmpty()
+
+        Result(
+            ok = code in 200..299,
+            message = if (code in 200..299) {
+                "BUG inviato"
+            } else {
+                "HTTP $code"
+            },
+            body = body
+        )
+
+    }.getOrElse {
+
+        Result(
+            false,
+            it.message ?: "Errore durante l'invio del BUG"
+        )
+    }
+
+
+    // ========================================================
     // CONVERSIONE JSON -> SITE
     // ========================================================
 

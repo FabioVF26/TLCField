@@ -82,6 +82,11 @@ class MainActivity : ComponentActivity() {
                                     "rf_tools"
                                 )
                             },
+                            onBugReport = {
+                                navController.navigate(
+                                    "bug_report"
+                                )
+                            },
                             onServer = {
                                 navController.navigate(
                                     "server_sync"
@@ -225,6 +230,15 @@ class MainActivity : ComponentActivity() {
                     composable("rf_tools") {
 
                         RfToolsScreen(
+                            onBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable("bug_report") {
+
+                        BugReportScreen(
                             onBack = {
                                 navController.popBackStack()
                             }

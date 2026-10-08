@@ -139,7 +139,7 @@ fun ServerSyncScreen(onBack: () -> Unit) {
                         val result = withContext(Dispatchers.IO) {
                             SyncRepository.sync(context)
                         }
-                        status = "${result.message} — inviati ${result.uploaded}, ricevuti ${result.downloaded}"
+                        status = "${result.message} — interventi inviati ${result.uploaded}, ricevuti ${result.downloaded}; BUG inviati ${result.bugsUploaded}"
                         busy = false
                     }
                 },

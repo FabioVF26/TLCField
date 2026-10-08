@@ -26,8 +26,19 @@ class InterventionRow(Base):
     payload_json: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
+
+class BugReportRow(Base):
+    __tablename__ = "bug_reports"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    personnel_id: Mapped[str] = mapped_column(String(32), index=True)
+    full_name: Mapped[str] = mapped_column(String(255), index=True)
+    timestamp_ms: Mapped[str] = mapped_column(String(32), index=True)
+    payload_json: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 Base.metadata.create_all(engine)
-app = FastAPI(title="TLC Field API", version="1.4.0")
+app = FastAPI(title="TLC Field API", version="1.5.0")
 
 class InterventionPayload(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -35,6 +46,17 @@ class InterventionPayload(BaseModel):
     siteId: str
     siteName: str
     timestamp: int
+
+
+class BugReportPayload(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    id: str
+    personnelId: int
+    qualification: str = ""
+    fullName: str
+    notes: str
+    timestamp: int
+    appVersion: str = ""
 
 
 def auth(authorization: str | None = Header(default=None)):
@@ -53,7 +75,7 @@ def db_session():
 
 @app.get("/api/v1/health")
 def health(_: None = Depends(auth)):
-    return {"ok": True, "service": "tlc-field-api", "version": "1.4.0"}
+    return {"ok": True, "service": "tlc-field-api", "version": "1.5.0"}
 
 @app.post("/api/v1/interventions")
 def upsert_intervention(payload: InterventionPayload, _: None = Depends(auth), db: Session = Depends(db_session)):
@@ -97,3 +119,31 @@ def delete_intervention(
     db.delete(row)
     db.commit()
     return {"ok": True, "id": intervention_id, "deleted": True}
+
+
+@app.post("/api/v1/bugs")
+def upsert_bug_report(payload: BugReportPayload, _: None = Depends(auth), db: Session = Depends(db_session)):
+    data: dict[str, Any] = payload.model_dump(mode="json")
+    row = db.get(BugReportRow, payload.id)
+    if row is None:
+        row = BugReportRow(
+            id=payload.id,
+            personnel_id=str(payload.personnelId),
+            full_name=payload.fullName,
+            timestamp_ms=str(payload.timestamp),
+            payload_json=json.dumps(data, ensure_ascii=False),
+        )
+        db.add(row)
+    else:
+        row.personnel_id = str(payload.personnelId)
+        row.full_name = payload.fullName
+        row.timestamp_ms = str(payload.timestamp)
+        row.payload_json = json.dumps(data, ensure_ascii=False)
+    db.commit()
+    return {"ok": True, "id": payload.id}
+
+
+@app.get("/api/v1/bugs")
+def list_bug_reports(_: None = Depends(auth), db: Session = Depends(db_session)):
+    rows = db.query(BugReportRow).order_by(BugReportRow.timestamp_ms.desc()).all()
+    return [json.loads(r.payload_json) for r in rows]
