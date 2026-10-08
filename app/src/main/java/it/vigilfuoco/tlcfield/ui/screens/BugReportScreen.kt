@@ -110,10 +110,25 @@ fun BugReportScreen(onBack: () -> Unit) {
                         }
                     }
                 } else {
-                    personnelStatus = "Server non configurato. Eseguire la configurazione/sincronizzazione."
+                    // 4) Fallback locale: la funzione BUG deve poter essere
+                    // usata anche durante prove completamente offline.
+                    val fallback = PersonnelRepository.fallbackPersonnel()
+                    PersonnelRepository.updateFromServer(fallback)
+                    loaded = PersonnelRepository.getAll()
+                    personnelStatus = "Modalità offline: elenco personale locale. Le segnalazioni saranno inviate alla prossima sincronizzazione."
                 }
             } else {
                 personnelStatus = ""
+            }
+
+            // Se il server è configurato ma non raggiungibile / restituisce
+            // un elenco vuoto, consenti comunque la segnalazione con il
+            // fallback locale.
+            if (loaded.isEmpty()) {
+                val fallback = PersonnelRepository.fallbackPersonnel()
+                PersonnelRepository.updateFromServer(fallback)
+                loaded = PersonnelRepository.getAll()
+                personnelStatus = "Modalità offline: elenco personale locale. Le segnalazioni saranno inviate alla prossima sincronizzazione."
             }
 
             personnel = loaded
@@ -178,6 +193,14 @@ fun BugReportScreen(onBack: () -> Unit) {
                     Text(if (loadingPersonnel) "CARICAMENTO..." else "RICARICA ELENCO PERSONALE")
                 }
             } else {
+                if (personnelStatus.isNotBlank()) {
+                    Text(
+                        personnelStatus,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded }

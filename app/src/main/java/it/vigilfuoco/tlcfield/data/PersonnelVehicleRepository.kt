@@ -18,6 +18,30 @@ object PersonnelRepository {
     fun updateFromServer(personnel: List<Personnel>) {
         items = personnel
     }
+
+    /**
+     * Elenco locale di emergenza usato solo quando non sono disponibili
+     * né dati in memoria/cache né il server. Gli ID negativi evitano
+     * collisioni con gli ID del backend; il report conserva comunque
+     * qualifica e nominativo completi.
+     */
+    fun fallbackPersonnel(): List<Personnel> = listOf(
+        Personnel(-1001, "I.A.", "BUFFETTI MARCO", true),
+        Personnel(-1002, "C.R.", "CECCUCCI ORAZIO", true),
+        Personnel(-1003, "A.", "CONTI RENATO", true),
+        Personnel(-1004, "V.E.", "FIORDI FABIO", true),
+        Personnel(-1005, "I.A.", "FONTI FEDERICO", true),
+        Personnel(-1006, "C.R.", "GIOVANNOTTI EMILIANO", true),
+        Personnel(-1007, "V.E.", "IULIANO SIMONE", true),
+        Personnel(-1008, "A.C.", "PALAMA' ANTONIO LUIGI", true),
+        Personnel(-1009, "A.C.", "PARADISO STEFANO", true),
+        Personnel(-1010, "V.E.", "PERROTTA MARCO", true),
+        Personnel(-1011, "V.E.", "PICCHI DANIELE", true),
+        Personnel(-1012, "C.S.E.", "TOTO GIANLUCA", true),
+        Personnel(-1013, "C.S.E.", "URBINATI GOFFREDO", true),
+        Personnel(-1014, "C.S.E.", "ZAPPA FRANCO", true),
+        Personnel(-1015, "A.C.", "ZINGARELLI ALESSIO", true)
+    )
 }
 
 
