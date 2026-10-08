@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.BugReport
@@ -52,8 +55,9 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -62,7 +66,7 @@ fun HomeScreen(
                     id = R.drawable.logo_tlc
                 ),
                 contentDescription = "Logo TLC Vigili del Fuoco",
-                modifier = Modifier.height(120.dp),
+                modifier = Modifier.height(88.dp),
                 contentScale = ContentScale.Fit
             )
 
@@ -73,7 +77,7 @@ fun HomeScreen(
 
             Text(
                 text = "Supporto tecnico ponti radio VVF",
-                fontSize = 16.sp
+                fontSize = 15.sp
             )
 
             HomeButton(
@@ -147,7 +151,7 @@ fun HomeScreen(
             )
 
             Text(
-                text = "Versione 1.5.4 — segnalazione BUG sperimentale con archivio locale e stato di sincronizzazione, modifica rapporti, cancellazione protetta da amministratore, sincronizzazione server e diagnostica KAIROS.",
+                text = "Versione 1.5.5 — segnalazione BUG sperimentale con archivio locale e stato di sincronizzazione, modifica rapporti, cancellazione protetta da amministratore, sincronizzazione server e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )
@@ -166,16 +170,18 @@ private fun HomeButton(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(15.dp)
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 9.dp)
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
         )
 
         Text(
             text = label,
-            modifier = Modifier.padding(start = 12.dp)
+            modifier = Modifier.padding(start = 10.dp),
+            fontSize = 15.sp
         )
     }
 }
