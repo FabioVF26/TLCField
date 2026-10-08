@@ -46,7 +46,10 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BugReportScreen(onBack: () -> Unit) {
+fun BugReportScreen(
+    onBack: () -> Unit,
+    onSavedReports: () -> Unit
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -170,6 +173,13 @@ fun BugReportScreen(onBack: () -> Unit) {
                 "Funzione sperimentale per raccogliere anomalie e problemi riscontrati durante l'uso dell'app.",
                 style = MaterialTheme.typography.bodyMedium
             )
+
+            Button(
+                onClick = onSavedReports,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("VEDI SEGNALAZIONI SALVATE")
+            }
 
             if (personnel.isEmpty()) {
                 Text(

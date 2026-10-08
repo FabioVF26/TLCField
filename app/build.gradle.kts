@@ -11,8 +11,8 @@ android {
         applicationId = "it.vigilfuoco.tlcfield"
         minSdk = 26
         targetSdk = 37
-        versionCode = 18
-        versionName = "1.5.3"
+        versionCode = 19
+        versionName = "1.5.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

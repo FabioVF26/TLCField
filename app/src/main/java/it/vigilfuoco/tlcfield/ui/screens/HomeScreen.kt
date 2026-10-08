@@ -43,6 +43,7 @@ fun HomeScreen(
     onDocumentation: () -> Unit,
     onRfTools: () -> Unit,
     onBugReport: () -> Unit,
+    onBugReports: () -> Unit,
     onServer: () -> Unit
 ) {
     Scaffold { padding ->
@@ -125,6 +126,13 @@ fun HomeScreen(
             )
 
             HomeButton(
+                label = "SEGNALAZIONI BUG",
+                icon = Icons.Default.History,
+                enabled = true,
+                onClick = onBugReports
+            )
+
+            HomeButton(
                 label = "STORICO INTERVENTI",
                 icon = Icons.Default.History,
                 enabled = true,
@@ -139,7 +147,7 @@ fun HomeScreen(
             )
 
             Text(
-                text = "Versione 1.5 — segnalazione BUG sperimentale, modifica rapporti, cancellazione protetta da amministratore, sincronizzazione server e diagnostica KAIROS.",
+                text = "Versione 1.5.4 — segnalazione BUG sperimentale con archivio locale e stato di sincronizzazione, modifica rapporti, cancellazione protetta da amministratore, sincronizzazione server e diagnostica KAIROS.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
             )

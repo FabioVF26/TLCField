@@ -87,6 +87,11 @@ class MainActivity : ComponentActivity() {
                                     "bug_report"
                                 )
                             },
+                            onBugReports = {
+                                navController.navigate(
+                                    "bug_reports"
+                                )
+                            },
                             onServer = {
                                 navController.navigate(
                                     "server_sync"
@@ -239,6 +244,20 @@ class MainActivity : ComponentActivity() {
                     composable("bug_report") {
 
                         BugReportScreen(
+                            onBack = {
+                                navController.popBackStack()
+                            },
+                            onSavedReports = {
+                                navController.navigate(
+                                    "bug_reports"
+                                )
+                            }
+                        )
+                    }
+
+                    composable("bug_reports") {
+
+                        BugReportsScreen(
                             onBack = {
                                 navController.popBackStack()
                             }
